@@ -16,3 +16,11 @@ The Note Making App is a web application that allows users to sign up, log in, a
 - **MongoDB**: Database for storing user data, notes, and form status.
 - **HTML, CSS, JavaScript**: Frontend technologies used to build the user interface.
 
+## Usage
+- Before executing the program create a database called notes_db and include collections 'notes', 'settings' and users.
+- And add this 
+{
+  "_id": "form_toggle",
+  "form_active": false
+}
+to the settings collection
