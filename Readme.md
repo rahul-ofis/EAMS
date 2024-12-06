@@ -18,9 +18,9 @@ The Note Making App is a web application that allows users to sign up, log in, a
 
 ## Usage
 - Before executing the program create a database called notes_db and include collections 'notes', 'settings' and users.
-- And add this 
-{
-  "_id": "form_toggle",
-  "form_active": false
-}
+- And add this<br>
+{<br>
+  "_id": "form_toggle",<br>
+  "form_active": false<br>
+}<br>
 to the settings collection
