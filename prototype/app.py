@@ -34,10 +34,12 @@ def load_user(user_id):
 @app.route('/')
 def index():
     form_setting = settings_collection.find_one({'_id': 'form_toggle'})
-    form_active = form_setting.get('form_active', False)  # Default to False if key is missing
-    print(form_active)
+    # Handle case where setting doesn't exist
+    if not form_setting:
+        form_active = False
+    else:
+        form_active = form_setting.get('form_active', False)  # Default to False if key is missing
     return render_template('index.html', form_active=form_active)
-
 
 # Sign-up route
 @app.route('/signup', methods=['GET', 'POST'])
@@ -45,23 +47,26 @@ def signup():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        role = request.form.get('role', 'user')  # default to 'user' role
+        
+        # Auto-detect role based on email domain
+        if 'hr@gmail.com' in username.lower() or username.lower().endswith('@hradmin.com'):
+            role = 'hr'
+        else:
+            role = 'user'
+            
         existing_user = users_collection.find_one({'username': username})
         
         if existing_user:
-            return 'Username already exists', 400
-        
-        # Insert new user into the users collection
+            return "Username already exists", 400
+            
         new_user = {
             'username': username,
-            'password': password,  # Store the password securely (e.g., hash it before saving)
+            'password': password,
             'role': role
         }
-        result = users_collection.insert_one(new_user)
         
-        user_obj = User(new_user)
-        login_user(user_obj)
-        return redirect(url_for('index'))
+        users_collection.insert_one(new_user)
+        return redirect(url_for('signin'))
     
     return render_template('signup.html')
 
