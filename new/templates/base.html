@@ -8,6 +8,16 @@
 </head>
 <body>
     {% if session.get('user_id') %}
+    <header class="header">
+        <div class="header-left">
+            <h1>Appraisal Form</h1>
+        </div>
+        <div class="header-right">
+            <span>Developed by</span>
+            <img src="{{ url_for('static', filename='images/alphanimble-logo.png') }}" alt="Logo" class="logo">
+            <p style="font-style: italic; color: bisque;">AlphaNimble</p>
+        </div>
+    </header>
     <div class="sidebar">
         {% if session.get('role') != 'hr' %}
         <a href="/notes" class="sidebar-link">

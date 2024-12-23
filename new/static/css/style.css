@@ -27,9 +27,9 @@ body {
 .sidebar {
     position: fixed;
     left: 0;
-    top: 0;
+    top: 4rem; /* Adjusted to be below the header */
     width: 16rem;
-    height: 100vh;
+    height: calc(100vh - 4rem); /* Adjusted to account for the header height */
     background-color: var(--sidebar-bg);
     padding: 1rem;
 }
@@ -59,6 +59,7 @@ body {
 .content {
     margin-left: 16rem;
     padding: 2rem;
+    padding-top: 6rem; /* Adjusted to account for the header height */
 }
 
 .form-group {
@@ -480,4 +481,35 @@ button[type="submit"]:hover {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+/* ...existing code... */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--sidebar-bg);
+    color: white;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-left h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-right .logo {
+    width: 50px;
+    height: 30px;
 }
