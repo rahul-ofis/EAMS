@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="teams-container">
+    <h2>Teams</h2>
+    
+    <div class="team-management">
+        <h3>Manage Teams</h3>
+        <form id="team-form" method="POST">
+            <div class="form-group">
+                <label for="team-name">Team Name</label>
+                <input type="text" id="team-name" name="team_name" required>
+            </div>
+            <div class="form-group">
+                <label for="manager">Manager</label>
+                <select id="manager" name="manager" required>
+                    {% for user in users %}
+                    <option value="{{ user._id }}">{{ user.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Team Members</label>
+                <div class="checkbox-group">
+                    {% for user in users %}
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="member-{{ user._id }}" name="members" value="{{ user._id }}">
+                        <label for="member-{{ user._id }}">{{ user.name }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit">Create Team</button>
+        </form>
+    </div>
+
+    <div class="teams-list">
+        {% for team in teams %}
+        <div class="team-card">
+            <h3>{{ team.name }}</h3>
+            <p><strong>Manager:</strong> {{ team.manager_name }}</p>
+            <p><strong>Members:</strong> {{ team.members | join(', ') }}</p>
+            <div class="button-group">
+                <button class="edit-team-btn" data-team-id="{{ team._id }}">Edit</button>
+                <button class="delete-team-btn" data-team-id="{{ team._id }}">Delete</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Edit Team Modal -->
+<div id="edit-team-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3>Edit Team</h3>
+        <form id="edit-team-form" method="POST">
+            <input type="hidden" id="edit-team-id" name="team_id">
+            <div class="form-group">
+                <label for="edit-team-name">Team Name</label>
+                <input type="text" id="edit-team-name" name="team_name" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-manager">Manager</label>
+                <select id="edit-manager" name="manager" required>
+                    {% for user in users %}
+                    <option value="{{ user._id }}">{{ user.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Team Members</label>
+                <div class="checkbox-group">
+                    {% for user in users %}
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="edit-member-{{ user._id }}" name="members" value="{{ user._id }}">
+                        <label for="edit-member-{{ user._id }}">{{ user.name }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let isSubmitting = false;
+
+// Ensure the event listener is added only once
+document.addEventListener('DOMContentLoaded', () => {
+    const teamForm = document.getElementById('team-form');
+    if (teamForm) {
+        teamForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isSubmitting) return;
+            isSubmitting = true;
+
+            const formData = new FormData(e.target);
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            try {
+                console.log('Submitting form data:', formData);
+                const response = await fetch('/api/create-team', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    console.log('Team created successfully');
+                    alert('Team created successfully');
+                    window.location.reload();
+                } else {
+                    const data = await response.json();
+                    console.error('Error creating team:', data.error);
+                    alert(data.error);
+                }
+            } catch (error) {
+                console.error('An error occurred:', error);
+                alert('An error occurred. Please try again.');
+            } finally {
+                isSubmitting = false;
+                submitButton.disabled = false;
+            }
+        });
+    }
+
+    document.querySelectorAll('.delete-team-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+            const teamId = button.dataset.teamId;
+            if (confirm('Are you sure you want to delete this team?')) {
+                try {
+                    const response = await fetch(`/api/delete-team/${teamId}`, {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        console.log('Team deleted successfully');
+                        alert('Team deleted successfully');
+                        window.location.reload();
+                    } else {
+                        console.error('Failed to delete team');
+                        alert('Failed to delete team');
+                    }
+                } catch (error) {
+                    console.error('An error occurred:', error);
+                    alert('An error occurred. Please try again.');
+                }
+            }
+        });
+    });
+
+    document.querySelectorAll('.edit-team-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+            const teamId = button.dataset.teamId;
+            try {
+                const response = await fetch(`/api/get-team/${teamId}`);
+                if (response.ok) {
+                    const team = await response.json();
+                    document.getElementById('edit-team-id').value = team._id;
+                    document.getElementById('edit-team-name').value = team.name;
+                    document.getElementById('edit-manager').value = team.manager_id;
+                    const membersCheckboxes = document.querySelectorAll('#edit-members input[type="checkbox"]');
+                    membersCheckboxes.forEach(checkbox => {
+                        checkbox.checked = team.member_ids.includes(checkbox.value);
+                    });
+                    document.getElementById('edit-team-modal').style.display = 'block';
+                } else {
+                    console.error('Failed to fetch team details');
+                    alert('Failed to fetch team details');
+                }
+            } catch (error) {
+                console.error('An error occurred:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    });
+
+    const editTeamForm = document.getElementById('edit-team-form');
+    if (editTeamForm) {
+        editTeamForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isSubmitting) return;
+            isSubmitting = true;
+
+            const formData = new FormData(e.target);
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            try {
+                console.log('Submitting edit form data:', formData);
+                const response = await fetch('/api/edit-team', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    console.log('Team updated successfully');
+                    alert('Team updated successfully');
+                    window.location.reload();
+                } else {
+                    const data = await response.json();
+                    console.error('Error updating team:', data.error);
+                    alert(data.error);
+                }
+            } catch (error) {
+                console.error('An error occurred:', error);
+                alert('An error occurred. Please try again.');
+            } finally {
+                isSubmitting = false;
+                submitButton.disabled = false;
+            }
+        });
+    }
+
+    document.querySelector('.modal .close').addEventListener('click', () => {
+        document.getElementById('edit-team-modal').style.display = 'none';
+    });
+});
+</script>
+{% endblock %}
+
+

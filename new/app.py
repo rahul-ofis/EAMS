@@ -32,16 +32,16 @@ def signup():
         email = request.form['email']
         password = request.form['password']
 
-        role = 'hr' if email == 'hr@gmail.com' else 'user'
-
         if db.users.find_one({'email': email}):
             return jsonify({'error': 'Email already exists'}), 400
+
+        role = 'hr' if email == 'hr@gmail.com' else 'user'
 
         user = {
             'name': name,
             'email': email,
             'password': password,
-            'role': role
+            'role': role  # Set role based on email
         }
         db.users.insert_one(user)
         return redirect('/signin')
@@ -123,11 +123,12 @@ def forms():
         return jsonify({'error': 'Form status not initialized'}), 500
 
     if is_hr:
+        users = list(db.users.find({'role': {'$ne': 'hr'}}))
         submissions = list(db.form_submissions.find())
         for submission in submissions:
             user = db.users.find_one({'_id': ObjectId(submission['user_id'])})
             submission['user_name'] = user['name'] if user else 'Unknown'
-        return render_template('forms_hr.html', submissions=submissions, form_enabled=form_status['enabled'])
+        return render_template('forms_hr.html', submissions=submissions, form_enabled=form_status['enabled'], users=users)
 
     if not form_status['enabled']:
         return render_template('forms.html', form_enabled=False)
@@ -173,6 +174,120 @@ def submit_form():
     db.notifications.insert_one(notification)
 
     return jsonify({'success': True})
+
+@app.route('/api/create-team', methods=['POST'])
+@login_required
+def create_team():
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+    count =0
+    print(count)
+    team_name = request.form['team_name']
+    manager_id = request.form['manager']
+    member_ids = request.form.getlist('members')
+
+    team = {
+        'name': team_name,
+        'manager_id': manager_id,
+        'member_ids': member_ids
+    }
+    db.teams.insert_one(team)
+    
+    # Update the user's role to 'manager'
+    db.users.update_one({'_id': ObjectId(manager_id)}, {'$set': {'role': 'manager'}})
+    
+    return jsonify({'success': True})
+
+@app.route('/api/delete-team/<team_id>', methods=['DELETE'])
+@login_required
+def delete_team(team_id):
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    team = db.teams.find_one({'_id': ObjectId(team_id)})
+    if not team:
+        return jsonify({'error': 'Team not found'}), 404
+
+    # Reassign manager role to user
+    db.users.update_one({'_id': ObjectId(team['manager_id'])}, {'$set': {'role': 'user'}})
+    db.teams.delete_one({'_id': ObjectId(team_id)})
+
+    return jsonify({'success': True})
+
+@app.route('/api/get-team/<team_id>', methods=['GET'])
+@login_required
+def get_team(team_id):
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    team = db.teams.find_one({'_id': ObjectId(team_id)})
+    if not team:
+        return jsonify({'error': 'Team not found'}), 404
+
+    team['_id'] = str(team['_id'])
+    team['manager_id'] = str(team['manager_id'])
+    team['member_ids'] = [str(member_id) for member_id in team['member_ids']]
+
+    return jsonify(team)
+
+@app.route('/api/edit-team', methods=['POST'])
+@login_required
+def edit_team():
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    team_id = request.form['team_id']
+    team_name = request.form['team_name']
+    new_manager_id = request.form['manager']
+    member_ids = request.form.getlist('members')
+
+    team = db.teams.find_one({'_id': ObjectId(team_id)})
+    if not team:
+        return jsonify({'error': 'Team not found'}), 404
+
+    # Reassign previous manager role to user
+    if team['manager_id'] != new_manager_id:
+        db.users.update_one({'_id': ObjectId(team['manager_id'])}, {'$set': {'role': 'user'}})
+        db.users.update_one({'_id': ObjectId(new_manager_id)}, {'$set': {'role': 'manager'}})
+
+    db.teams.update_one(
+        {'_id': ObjectId(team_id)},
+        {'$set': {'name': team_name, 'manager_id': new_manager_id, 'member_ids': member_ids}}
+    )
+
+    return jsonify({'success': True})
+
+@app.route('/teams')
+@login_required
+def teams():
+    if session.get('role') != 'hr':
+        return redirect('/forms')
+
+    teams = list(db.teams.find())
+    users = list(db.users.find())
+    for team in teams:
+        manager = db.users.find_one({'_id': ObjectId(team['manager_id'])})
+        team['manager_name'] = manager['name'] if manager else 'Unknown'
+        team['members'] = [db.users.find_one({'_id': ObjectId(member_id)})['name'] for member_id in team['member_ids']]
+    return render_template('teams.html', teams=teams, users=users)
+
+@app.route('/team-submissions')
+@login_required
+def team_submissions():
+    if session.get('role') != 'manager':
+        return redirect('/forms')
+
+    team = db.teams.find_one({'manager_id': session['user_id']})
+    if team:
+        team_name = team['name']
+        member_ids = team['member_ids']
+        submissions = list(db.form_submissions.find({'user_id': {'$in': member_ids}}))
+        for submission in submissions:
+            user = db.users.find_one({'_id': ObjectId(submission['user_id'])})
+            submission['user_name'] = user['name'] if user else 'Unknown'
+        return render_template('forms_manager.html', team_name=team_name, submissions=submissions)
+    else:
+        return render_template('forms_manager.html', team_name=None, submissions=[])
 
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
