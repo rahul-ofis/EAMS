@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="forms-container">
+    <div class="forms-header">
+        <h2>Form Submissions</h2>
+        <button id="toggle-form" class="toggle-button">
+            {{ 'Disable Form' if form_enabled else 'Enable Form' }}
+        </button>
+    </div>
+
+    <div class="submissions-list">
+        {% for submission in submissions %}
+        <div class="submission-card">
+            <div class="submission-header">
+                Submitted by: {{ submission.user_name }}
+                <span class="submission-date">
+                    {{ submission.created_at.strftime('%B %d, %Y, %I:%M:%S %p') }}
+                </span>
+            </div>
+            {% for category, messages in submission.data.items() %}
+            <div class="submission-item">
+                <strong>{{ category }}:</strong>
+                <ul>
+                    {% for message in messages %}
+                    <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('toggle-form').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/api/toggle-form', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const button = document.getElementById('toggle-form');
+            button.textContent = data.enabled ? 'Disable Form' : 'Enable Form';
+        } else {
+            alert('Failed to toggle form status');
+        }
+    } catch (error) {
+        alert('An error occurred. Please try again.');
+    }
+});
+</script>
+{% endblock %}

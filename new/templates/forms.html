@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="forms-container">
+    <h2>Submit Form</h2>
+    
+    {% if not form_enabled %}
+    <div class="form-disabled-message">
+        <p>The form is currently disabled by HR.</p>
+    </div>
+    {% else %}
+    <form id="submission-form" class="form">
+        {% for category in ['Work', 'Personal', 'Ideas', 'Tasks'] %}
+        <div class="form-group">
+            <label for="{{ category }}-inputs">{{ category }}</label>
+            
+            {% if notes and notes.get(category) %}
+            <div class="existing-notes">
+                <h4>Your existing notes:</h4>
+                {% for note in notes[category] %}
+                <div class="note-reference">
+                    <p>{{ note.message }}</p>
+                    <button 
+                        type="button" 
+                        class="use-note-btn" 
+                        data-category="{{ category }}" 
+                        data-message="{{ note.message }}"
+                    >
+                        Use this note
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="dynamic-inputs" id="{{ category }}-inputs">
+                <div class="input-group">
+                    <textarea
+                        class="form-input"
+                        name="{{ category }}[]"
+                        placeholder="Enter your {{ category | lower }} note"
+                    ></textarea>
+                    <button type="button" class="remove-input-btn" style="display: none;">Remove</button>
+                </div>
+            </div>
+            
+            <button 
+                type="button" 
+                class="add-input-btn" 
+                data-category="{{ category }}"
+            >
+                Add another {{ category | lower }} note
+            </button>
+        </div>
+        {% endfor %}
+        
+        <button type="submit" class="submit-btn">Submit Form</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form data
+    const formData = {};
+    
+    function addInputField(category, value = '') {
+        const container = document.getElementById(`${category}-inputs`);
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group';
+        
+        inputGroup.innerHTML = `
+            <textarea
+                class="form-input"
+                name="${category}[]"
+                placeholder="Enter your ${category.toLowerCase()} note"
+            >${value}</textarea>
+            <button type="button" class="remove-input-btn">Remove</button>
+        `;
+        
+        container.appendChild(inputGroup);
+        updateRemoveButtons(category);
+    }
+
+    function updateRemoveButtons(category) {
+        const container = document.getElementById(`${category}-inputs`);
+        const removeButtons = container.querySelectorAll('.remove-input-btn');
+        removeButtons.forEach(btn => {
+            btn.style.display = removeButtons.length > 1 ? 'block' : 'none';
+        });
+    }
+
+    // Add input button handlers
+    document.querySelectorAll('.add-input-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const category = button.dataset.category;
+            addInputField(category);
+        });
+    });
+
+    // Remove input button handler
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-input-btn')) {
+            const inputGroup = e.target.closest('.input-group');
+            const category = e.target.closest('.dynamic-inputs').id.replace('-inputs', '');
+            inputGroup.remove();
+            updateRemoveButtons(category);
+        }
+    });
+
+    // Use note button handler
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('use-note-btn')) {
+            const category = e.target.dataset.category;
+            const message = e.target.dataset.message;
+            addInputField(category, message);
+        }
+    });
+
+    // Form submission handler
+    const form = document.getElementById('submission-form');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {};
+            
+            // Gather all inputs for each category
+            ['Work', 'Personal', 'Ideas', 'Tasks'].forEach(category => {
+                const inputs = document.querySelectorAll(`textarea[name="${category}[]"]`);
+                const values = Array.from(inputs)
+                    .map(input => input.value.trim())
+                    .filter(value => value !== '');
+                
+                if (values.length > 0) {
+                    formData[category] = values;
+                }
+            });
+            
+            try {
+                const response = await fetch('/api/submit-form', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to submit form');
+                }
+                
+                alert('Form submitted successfully');
+                window.location.reload();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

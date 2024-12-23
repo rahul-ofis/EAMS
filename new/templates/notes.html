@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="notes-container">
+    <h2>My Notes</h2>
+
+    <form id="note-form" class="note-form">
+        <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category" name="category" required>
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+                <option value="Ideas">Ideas</option>
+                <option value="Tasks">Tasks</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit">Save Note</button>
+    </form>
+
+    <div id="notes-list" class="notes-list">
+        {% for note in notes %}
+        <div class="note-card">
+            <div class="note-category">{{ note.category }}</div>
+            <div class="note-message">{{ note.message }}</div>
+            <div class="note-timestamp">
+                {{ note.created_at.strftime('%B %d, %Y, %I:%M:%S %p') }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('note-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const category = document.getElementById('category').value;
+    const message = document.getElementById('message').value;
+
+    try {
+        const response = await fetch('/api/notes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ category, message })
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to save note');
+        }
+    } catch (error) {
+        alert('An error occurred. Please try again.');
+    }
+});
+</script>
+{% endblock %}
