@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up</title>
+    <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body {
@@ -31,12 +31,14 @@
 <body>
     <div class="auth-container">
         <div class="auth-box">
-            <h2>Sign Up</h2>
-            <form id="signup-form" method="POST">
+            <h2>{{ title }}</h2>
+            <form id="auth-form" method="POST">
+                {% if is_signup %}
                 <div class="form-group">
                     <label for="name">Name</label>
                     <input type="text" id="name" name="name" required>
                 </div>
+                {% endif %}
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" name="email" required>
@@ -45,24 +47,31 @@
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" required>
                 </div>
-                <button type="submit">Sign Up</button>
+                <button type="submit">{{ title }}</button>
             </form>
-            <p class="auth-link">Already have an account? <a href="/signin">Sign In</a></p>
+            <p class="auth-link">
+                {% if is_signup %}
+                Already have an account? <a href="/signin">Sign In</a>
+                {% else %}
+                Don't have an account? <a href="/signup">Sign Up</a>
+                {% endif %}
+            </p>
         </div>
     </div>
     <script>
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
-            
+            const url = window.location.pathname;
+
             try {
-                const response = await fetch('/signup', {
+                const response = await fetch(url, {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 if (response.ok) {
-                    window.location.href = '/signin';
+                    window.location.href = url === '/signup' ? '/signin' : '/notes';
                 } else {
                     const data = await response.json();
                     alert(data.error);

@@ -45,8 +45,7 @@ def signup():
         }
         db.users.insert_one(user)
         return redirect('/signin')
-
-    return render_template('signup.html')
+    return render_template('auth.html', title='Sign Up', is_signup=True)
 
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
@@ -60,8 +59,7 @@ def signin():
             session['role'] = user['role']
             return redirect('/notes')
         return jsonify({'error': 'Invalid credentials'}), 401
-
-    return render_template('signin.html')
+    return render_template('auth.html', title='Sign In', is_signup=False)
 
 @app.route('/notes')
 @login_required
