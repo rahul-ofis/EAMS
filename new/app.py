@@ -98,13 +98,18 @@ def toggle_form():
     new_status = not form_status['enabled']
     db.form_status.update_one({'id': 1}, {'$set': {'enabled': new_status}})
 
-    return jsonify({'success': True, 'enabled': new_status})
+    # Add notification for all users
+    status_text = 'enabled' if new_status else 'disabled'
+    users = db.users.find({'role': {'$ne': 'hr'}})
+    for user in users:
+        notification = {
+            'user_id': str(user['_id']),
+            'message': f'The form has been {status_text} by HR',
+            'created_at': datetime.now()
+        }
+        db.notifications.insert_one(notification)
 
-@app.route('/notifications')
-@login_required
-def notifications():
-    user_notifications = list(db.notifications.find({'user_id': session['user_id']}))
-    return render_template('notifications.html', notifications=user_notifications)
+    return jsonify({'success': True, 'enabled': new_status})
 
 @app.route('/logout')
 def logout():
@@ -183,13 +188,25 @@ def submit_form():
             note['created_at'] = timestamp
             db.notes.insert_one(note)
 
-    # Create notification
+    # Create notification for the user
     notification = {
         'user_id': session['user_id'],
         'message': 'You have submitted a new form.',
         'created_at': timestamp
     }
     db.notifications.insert_one(notification)
+
+    # Create notification for HR
+    user = db.users.find_one({'_id': ObjectId(session['user_id'])})
+    user_name = user['name'] if user else 'Unknown User'
+    hr_users = db.users.find({'role': 'hr'})
+    for hr_user in hr_users:
+        hr_notification = {
+            'user_id': str(hr_user['_id']),
+            'message': f'{user_name} has submitted a new form.',
+            'created_at': timestamp
+        }
+        db.notifications.insert_one(hr_notification)
 
     return jsonify({'success': True})
 
@@ -214,6 +231,22 @@ def create_team():
     # Update the user's role to 'manager'
     db.users.update_one({'_id': ObjectId(manager_id)}, {'$set': {'role': 'manager'}})
     
+    # Add notifications for manager and members
+    notification_manager = {
+        'user_id': manager_id,
+        'message': f'You have been assigned as the manager of team {team_name}',
+        'created_at': datetime.now()
+    }
+    db.notifications.insert_one(notification_manager)
+
+    for member_id in member_ids:
+        notification_member = {
+            'user_id': member_id,
+            'message': f'You have been added to team {team_name}',
+            'created_at': datetime.now()
+        }
+        db.notifications.insert_one(notification_member)
+
     return jsonify({'success': True})
 
 @app.route('/api/delete-team/<team_id>', methods=['DELETE'])
@@ -225,6 +258,23 @@ def delete_team(team_id):
     team = db.teams.find_one({'_id': ObjectId(team_id)})
     if not team:
         return jsonify({'error': 'Team not found'}), 404
+
+    # Notify manager about role change
+    notification_manager = {
+        'user_id': str(team['manager_id']),
+        'message': f'You are no longer the manager of team {team["name"]}',
+        'created_at': datetime.now()
+    }
+    db.notifications.insert_one(notification_manager)
+
+    # Notify members about team deletion
+    for member_id in team['member_ids']:
+        notification_member = {
+            'user_id': str(member_id),
+            'message': f'You have been removed from team {team["name"]}',
+            'created_at': datetime.now()
+        }
+        db.notifications.insert_one(notification_member)
 
     # Reassign manager role to user
     db.users.update_one({'_id': ObjectId(team['manager_id'])}, {'$set': {'role': 'user'}})
@@ -257,8 +307,8 @@ def edit_team():
     try:
         team_id = request.form['team_id']
         team_name = request.form['team_name']
-        member_ids = request.form.getlist('members')
-        new_manager_id = request.form.get('manager')  # Use get() to make it optional
+        new_member_ids = request.form.getlist('members')
+        new_manager_id = request.form.get('manager')
     except KeyError as e:
         return jsonify({'error': f'Missing field: {str(e)}'}), 400
 
@@ -266,13 +316,52 @@ def edit_team():
     if not team:
         return jsonify({'error': 'Team not found'}), 404
 
-    # Reassign previous manager role to user if manager is changed
+    # Handle manager change
     if new_manager_id and team['manager_id'] != new_manager_id:
+        # Notify old manager
+        notification_old_manager = {
+            'user_id': str(team['manager_id']),
+            'message': f'You are no longer the manager of team {team_name}',
+            'created_at': datetime.now()
+        }
+        db.notifications.insert_one(notification_old_manager)
+
+        # Notify new manager
+        notification_new_manager = {
+            'user_id': new_manager_id,
+            'message': f'You have been assigned as the manager of team {team_name}',
+            'created_at': datetime.now()
+        }
+        db.notifications.insert_one(notification_new_manager)
+
+        # Update roles
         db.users.update_one({'_id': ObjectId(team['manager_id'])}, {'$set': {'role': 'user'}})
         db.users.update_one({'_id': ObjectId(new_manager_id)}, {'$set': {'role': 'manager'}})
-        team_update = {'name': team_name, 'manager_id': new_manager_id, 'member_ids': member_ids}
+        team_update = {'name': team_name, 'manager_id': new_manager_id, 'member_ids': new_member_ids}
     else:
-        team_update = {'name': team_name, 'member_ids': member_ids}
+        team_update = {'name': team_name, 'member_ids': new_member_ids}
+
+    # Handle member changes
+    old_member_ids = set(str(mid) for mid in team['member_ids'])
+    new_member_ids_set = set(new_member_ids)
+
+    # Notify removed members
+    for member_id in old_member_ids - new_member_ids_set:
+        notification = {
+            'user_id': member_id,
+            'message': f'You have been removed from team {team_name}',
+            'created_at': datetime.now()
+        }
+        db.notifications.insert_one(notification)
+
+    # Notify new members
+    for member_id in new_member_ids_set - old_member_ids:
+        notification = {
+            'user_id': member_id,
+            'message': f'You have been added to team {team_name}',
+            'created_at': datetime.now()
+        }
+        db.notifications.insert_one(notification)
 
     db.teams.update_one(
         {'_id': ObjectId(team_id)},
@@ -317,6 +406,42 @@ def team_submissions():
         return render_template('forms_manager.html', team_name=team_name, submissions=submissions)
     else:
         return render_template('forms_manager.html', team_name=None, submissions=[])
+
+@app.route('/api/notifications')
+@login_required
+def get_notifications():
+    notifications = list(db.notifications.find(
+        {'user_id': session['user_id']},
+        {'_id': 1, 'message': 1, 'created_at': 1, 'read': 1}
+    ).sort('created_at', -1))
+    
+    # Count unread notifications
+    unread_count = sum(1 for notification in notifications if not notification.get('read', False))
+    
+    # Format the datetime objects to ISO strings and convert ObjectId to string
+    for notification in notifications:
+        notification['_id'] = str(notification['_id'])
+        notification['created_at'] = notification['created_at'].isoformat()
+        notification['read'] = notification.get('read', False)
+        
+    return jsonify({
+        'notifications': notifications,
+        'unread_count': unread_count
+    })
+
+@app.route('/api/notifications/mark-read', methods=['POST'])
+@login_required
+def mark_notifications_read():
+    notification_ids = request.json.get('notification_ids', [])
+    if notification_ids:
+        db.notifications.update_many(
+            {
+                '_id': {'$in': [ObjectId(id) for id in notification_ids]},
+                'user_id': session['user_id']
+            },
+            {'$set': {'read': True}}
+        )
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
