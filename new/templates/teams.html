@@ -15,18 +15,24 @@
                 <label for="manager">Manager</label>
                 <select id="manager" name="manager" required>
                     {% for user in users %}
-                    <option value="{{ user._id }}">{{ user.name }}</option>
+                    {% if user.role != 'hr' %}
+                    <option value="{{ user._id }}" {% if user.team %}disabled{% endif %}>
+                        {{ user.name }}{% if user.team %} ({{ user.team.role }} of {{ user.team.name }}){% endif %}
+                    </option>
+                    {% endif %}
                     {% endfor %}
                 </select>
             </div>
             <div class="form-group">
-                <label>Team Members</label>
+                <label>Select Team Members</label>
                 <div class="checkbox-group">
                     {% for user in users %}
+                    {% if user.role != 'hr' %}
                     <div class="checkbox-item">
-                        <input type="checkbox" id="member-{{ user._id }}" name="members" value="{{ user._id }}">
-                        <label for="member-{{ user._id }}">{{ user.name }}</label>
+                        <label for="member-{{ user._id }}">{{ user.name }}{% if user.team %} ({{ user.team.role }} of {{ user.team.name }}){% endif %}</label>
+                        <input type="checkbox" id="member-{{ user._id }}" name="members" value="{{ user._id }}" {% if user.team %}disabled{% endif %}>
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -64,7 +70,11 @@
                 <label for="edit-manager">Manager</label>
                 <select id="edit-manager" name="manager" required>
                     {% for user in users %}
-                    <option value="{{ user._id }}">{{ user.name }}</option>
+                    {% if user.role != 'hr' %}
+                    <option value="{{ user._id }}">
+                        {{ user.name }}{% if user.team %} ({{ user.team.role }} of {{ user.team.name }}){% endif %}
+                    </option>
+                    {% endif %}
                     {% endfor %}
                 </select>
             </div>
@@ -72,10 +82,12 @@
                 <label>Team Members</label>
                 <div class="checkbox-group">
                     {% for user in users %}
+                    {% if user.role != 'hr' %}
                     <div class="checkbox-item">
+                        <label for="edit-member-{{ user._id }}">{{ user.name }}{% if user.team %} ({{ user.team.role }} of {{ user.team.name }}){% endif %}</label>
                         <input type="checkbox" id="edit-member-{{ user._id }}" name="members" value="{{ user._id }}">
-                        <label for="edit-member-{{ user._id }}">{{ user.name }}</label>
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -160,11 +172,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('edit-team-id').value = team._id;
                     document.getElementById('edit-team-name').value = team.name;
                     document.getElementById('edit-manager').value = team.manager_id;
-                    const membersCheckboxes = document.querySelectorAll('#edit-members input[type="checkbox"]');
+                    const membersCheckboxes = document.querySelectorAll('#edit-team-form input[type="checkbox"]');
                     membersCheckboxes.forEach(checkbox => {
                         checkbox.checked = team.member_ids.includes(checkbox.value);
                     });
                     document.getElementById('edit-team-modal').style.display = 'block';
+                    window.edit_team_id = team._id; // Set the global variable for the current team being edited
                 } else {
                     console.error('Failed to fetch team details');
                     alert('Failed to fetch team details');

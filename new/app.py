@@ -116,34 +116,39 @@ def logout():
 @app.route('/forms')
 @login_required
 def forms():
-    is_hr = session.get('role') == 'hr'
-    form_status = db.form_status.find_one({'id': 1})
+    try:
+        is_hr = session.get('role') == 'hr'
+        form_status = db.form_status.find_one({'id': 1})
 
-    if form_status is None:
-        return jsonify({'error': 'Form status not initialized'}), 500
+        if form_status is None:
+            # Initialize form status if not present
+            db.form_status.insert_one({'id': 1, 'enabled': False})
+            form_status = {'enabled': False}
 
-    if is_hr:
-        users = list(db.users.find({'role': {'$ne': 'hr'}}))
-        submissions = list(db.form_submissions.find())
-        for submission in submissions:
-            user = db.users.find_one({'_id': ObjectId(submission['user_id'])})
-            submission['user_name'] = user['name'] if user else 'Unknown'
-        return render_template('forms_hr.html', submissions=submissions, form_enabled=form_status['enabled'], users=users)
+        if is_hr:
+            users = list(db.users.find({'role': {'$ne': 'hr'}}))
+            submissions = list(db.form_submissions.find())
+            for submission in submissions:
+                user = db.users.find_one({'_id': ObjectId(submission['user_id'])})
+                submission['user_name'] = user['name'] if user else 'Unknown'
+            return render_template('forms_hr.html', submissions=submissions, form_enabled=form_status['enabled'], users=users)
 
-    if not form_status['enabled']:
-        return render_template('forms.html', form_enabled=False)
+        if not form_status['enabled']:
+            return render_template('forms.html', form_enabled=False)
 
-    user_notes = {}
-    notes = db.notes.find({'user_id': session['user_id']})
-    for note in notes:
-        category = note['category']
-        if category not in user_notes:
-            user_notes[category] = []
-        user_notes[category].append({
-            'message': note['message']
-        })
+        user_notes = {}
+        notes = db.notes.find({'user_id': session['user_id']})
+        for note in notes:
+            category = note['category']
+            if category not in user_notes:
+                user_notes[category] = []
+            user_notes[category].append({
+                'message': note['message']
+            })
 
-    return render_template('forms.html', form_enabled=True, notes=user_notes)
+        return render_template('forms.html', form_enabled=True, notes=user_notes)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/submit-form', methods=['POST'])
 @login_required
@@ -151,14 +156,16 @@ def submit_form():
     if session.get('role') == 'hr':
         return jsonify({'error': 'Unauthorized'}), 403
 
-    form_data = request.json
-    form_data = {k: v for k, v in form_data.items() if v}
+    data = request.json
+    form_data = data.get('formData', {})
+    new_notes = data.get('newNotes', [])
 
     if not form_data:
         return jsonify({'error': 'At least one field must be filled'}), 400
 
     timestamp = datetime.now()
 
+    # Save form submission
     submission = {
         'user_id': session['user_id'],
         'data': form_data,
@@ -166,6 +173,19 @@ def submit_form():
     }
     db.form_submissions.insert_one(submission)
 
+    # Save new notes, avoiding duplicates
+    for note in new_notes:
+        existing_note = db.notes.find_one({
+            'user_id': session['user_id'],
+            'category': note['category'],
+            'message': note['message']
+        })
+        if not existing_note:
+            note['user_id'] = session['user_id']
+            note['created_at'] = timestamp
+            db.notes.insert_one(note)
+
+    # Create notification
     notification = {
         'user_id': session['user_id'],
         'message': 'You have submitted a new form.',
@@ -236,23 +256,29 @@ def edit_team():
     if session.get('role') != 'hr':
         return jsonify({'error': 'Unauthorized'}), 403
 
-    team_id = request.form['team_id']
-    team_name = request.form['team_name']
-    new_manager_id = request.form['manager']
-    member_ids = request.form.getlist('members')
+    try:
+        team_id = request.form['team_id']
+        team_name = request.form['team_name']
+        member_ids = request.form.getlist('members')
+        new_manager_id = request.form.get('manager')  # Use get() to make it optional
+    except KeyError as e:
+        return jsonify({'error': f'Missing field: {str(e)}'}), 400
 
     team = db.teams.find_one({'_id': ObjectId(team_id)})
     if not team:
         return jsonify({'error': 'Team not found'}), 404
 
-    # Reassign previous manager role to user
-    if team['manager_id'] != new_manager_id:
+    # Reassign previous manager role to user if manager is changed
+    if new_manager_id and team['manager_id'] != new_manager_id:
         db.users.update_one({'_id': ObjectId(team['manager_id'])}, {'$set': {'role': 'user'}})
         db.users.update_one({'_id': ObjectId(new_manager_id)}, {'$set': {'role': 'manager'}})
+        team_update = {'name': team_name, 'manager_id': new_manager_id, 'member_ids': member_ids}
+    else:
+        team_update = {'name': team_name, 'member_ids': member_ids}
 
     db.teams.update_one(
         {'_id': ObjectId(team_id)},
-        {'$set': {'name': team_name, 'manager_id': new_manager_id, 'member_ids': member_ids}}
+        {'$set': team_update}
     )
 
     return jsonify({'success': True})
@@ -269,6 +295,11 @@ def teams():
         manager = db.users.find_one({'_id': ObjectId(team['manager_id'])})
         team['manager_name'] = manager['name'] if manager else 'Unknown'
         team['members'] = [db.users.find_one({'_id': ObjectId(member_id)})['name'] for member_id in team['member_ids']]
+        for user in users:
+            if str(user['_id']) == str(team['manager_id']):
+                user['team'] = {'name': team['name'], 'role': 'Manager', '_id': str(team['_id'])}
+            elif str(user['_id']) in team['member_ids']:
+                user['team'] = {'name': team['name'], 'role': 'Member', '_id': str(team['_id'])}
     return render_template('teams.html', teams=teams, users=users)
 
 @app.route('/team-submissions')

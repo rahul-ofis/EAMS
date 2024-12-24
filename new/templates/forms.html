@@ -125,33 +125,45 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = {};
-            
+            const uniqueNotes = new Map(); // Use Map to track unique category-message combinations
+
             // Gather all inputs for each category
             ['Work', 'Personal', 'Ideas', 'Tasks'].forEach(category => {
                 const inputs = document.querySelectorAll(`textarea[name="${category}[]"]`);
                 const values = Array.from(inputs)
                     .map(input => input.value.trim())
                     .filter(value => value !== '');
-                
+
                 if (values.length > 0) {
-                    formData[category] = values;
+                    const uniqueValues = [];
+                    values.forEach(message => {
+                        const key = `${category}-${message}`; // Create unique key
+                        if (!uniqueNotes.has(key)) {
+                            uniqueNotes.set(key, { category, message });
+                            uniqueValues.push(message);
+                        }
+                    });
+                    formData[category] = uniqueValues;
                 }
             });
-            
+
             try {
                 const response = await fetch('/api/submit-form', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify({ 
+                        formData, 
+                        newNotes: Array.from(uniqueNotes.values()) 
+                    })
                 });
-                
+
                 if (!response.ok) {
                     const data = await response.json();
                     throw new Error(data.error || 'Failed to submit form');
                 }
-                
+
                 alert('Form submitted successfully');
                 window.location.reload();
             } catch (error) {
