@@ -70,10 +70,11 @@
                     body: formData
                 });
 
+                const data = await response.json();
+                
                 if (response.ok) {
-                    window.location.href = url === '/signup' ? '/signin' : '/notes';
+                    window.location.href = data.redirect || '/notes';
                 } else {
-                    const data = await response.json();
                     alert(data.error);
                 }
             } catch (error) {

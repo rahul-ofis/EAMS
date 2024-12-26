@@ -41,10 +41,15 @@ def signup():
             'name': name,
             'email': email,
             'password': password,
-            'role': role  # Set role based on email
+            'role': role
         }
-        db.users.insert_one(user)
-        return redirect('/signin')
+        result = db.users.insert_one(user)
+        
+        # Automatically log in the user
+        session['user_id'] = str(result.inserted_id)
+        session['role'] = role
+        return jsonify({'success': True, 'redirect': '/notes'})
+        
     return render_template('auth.html', title='Sign Up', is_signup=True)
 
 @app.route('/signin', methods=['GET', 'POST'])
@@ -57,7 +62,7 @@ def signin():
         if user:
             session['user_id'] = str(user['_id'])
             session['role'] = user['role']
-            return redirect('/notes')
+            return jsonify({'success': True, 'redirect': '/notes'})
         return jsonify({'error': 'Invalid credentials'}), 401
     return render_template('auth.html', title='Sign In', is_signup=False)
 
