@@ -445,5 +445,5 @@ def mark_notifications_read():
 
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
-        db.form_status.insert_one({'id': 1, 'enabled': True})
+        db.form_status.insert_one({'id': 1, 'enabled': False})
     app.run(debug=True)
