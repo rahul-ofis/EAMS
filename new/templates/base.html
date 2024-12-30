@@ -59,6 +59,12 @@
             Forms
         </a>
         {% endif %}
+        <a href="/goals" class="sidebar-link">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zm0 7l10 5-10 5-10-5 10-5zm0 7l10 5-10 5-10-5 10-5z"></path>
+            </svg>
+            Goals
+        </a>
         {% if session.get('role') == 'manager' %}
         <a href="/team-submissions" class="sidebar-link">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
