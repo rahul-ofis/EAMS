@@ -529,6 +529,29 @@ def all_submissions():
         submission['employee_name'] = employee['name'] if employee else 'Unknown'
     return render_template('forms_admin.html', submissions=submissions)
 
+@app.route('/goals')
+@login_required
+def goals():
+    user_id = session['employee_id']
+    user_goals = list(db.goals.find({'employee_id': user_id}))
+    return render_template('goals.html', goals=user_goals)
+
+@app.route('/api/goals', methods=['POST'])
+@login_required
+def save_goal():
+    data = request.json
+    goal = {
+        'employee_id': session['epmloyee_id'],
+        'description': data['description'],
+        'weightage': data['weightage'],
+        'time_period': data['time_period'],
+        'ranking': data.get('ranking'),
+        'feedback': data.get('feedback'),
+        'created_at': datetime.now()
+    }
+    db.goals.insert_one(goal)
+    return jsonify({'success': True})
+
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
         db.form_status.insert_one({'id': 1, 'enabled': False})
