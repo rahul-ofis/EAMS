@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notes Management System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 </head>
 <body>
     {% if session.get('user_id') %}
@@ -75,6 +76,13 @@
                 <circle cx="12" cy="7" r="4"></circle>
             </svg>
             Teams
+        </a>
+        <a href="/user-management" class="sidebar-link">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            User Management
         </a>
         {% endif %}
         <a href="/logout" class="sidebar-link">

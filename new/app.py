@@ -27,30 +27,7 @@ def index():
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-
-        if db.users.find_one({'email': email}):
-            return jsonify({'error': 'Email already exists'}), 400
-
-        role = 'hr' if email == 'hr@gmail.com' else 'user'
-
-        user = {
-            'name': name,
-            'email': email,
-            'password': password,
-            'role': role
-        }
-        result = db.users.insert_one(user)
-        
-        # Automatically log in the user
-        session['user_id'] = str(result.inserted_id)
-        session['role'] = role
-        return jsonify({'success': True, 'redirect': '/notes'})
-        
-    return render_template('auth.html', title='Sign Up', is_signup=True)
+    return redirect('/signin')
 
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
@@ -448,7 +425,87 @@ def mark_notifications_read():
         )
     return jsonify({'success': True})
 
+@app.route('/user-management')
+@login_required
+def user_management():
+    if session.get('role') != 'hr':
+        return redirect('/forms')
+    users = list(db.users.find())
+    return render_template('user_management.html', users=users)
+
+@app.route('/api/add-user', methods=['POST'])
+@login_required
+def add_user():
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    name = request.form['name']
+    email = request.form['email']
+    password = request.form['password']
+    role = request.form['role']
+
+    if db.users.find_one({'email': email}):
+        return jsonify({'error': 'Email already exists'}), 400
+
+    user = {
+        'name': name,
+        'email': email,
+        'password': password,
+        'role': role
+    }
+    db.users.insert_one(user)
+    return jsonify({'success': True})
+
+@app.route('/api/delete-user/<user_id>', methods=['DELETE'])
+@login_required
+def delete_user(user_id):
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    db.users.delete_one({'_id': ObjectId(user_id)})
+    return jsonify({'success': True})
+
+@app.route('/api/get-user/<user_id>', methods=['GET'])
+@login_required
+def get_user(user_id):
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    user = db.users.find_one({'_id': ObjectId(user_id)})
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    user['_id'] = str(user['_id'])
+    return jsonify(user)
+
+@app.route('/api/edit-user', methods=['POST'])
+@login_required
+def edit_user():
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    user_id = request.form['user_id']
+    name = request.form['name']
+    email = request.form['email']
+    role = request.form['role']
+
+    db.users.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$set': {'name': name, 'email': email, 'role': role}}
+    )
+    return jsonify({'success': True})
+
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
         db.form_status.insert_one({'id': 1, 'enabled': False})
+    
+    # Add default HR user if not exists
+    if not db.users.find_one({'email': 'hr@gmail.com'}):
+        db.users.insert_one({
+            'name': 'HR',
+            'email': 'hr@gmail.com',
+            'password': '1234',  
+            'role': 'hr'
+        })
+    
     app.run(debug=True)
