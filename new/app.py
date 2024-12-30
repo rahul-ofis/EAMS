@@ -23,7 +23,7 @@ def login_required(f):
 @app.route('/')
 @login_required
 def index():
-    return redirect('/notes')
+    return redirect('/critical-incidents')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -56,11 +56,11 @@ def signin():
         if employee:
             session['employee_id'] = str(employee['_id'])
             session['role'] = employee['role']
-            return jsonify({'success': True, 'redirect': '/notes'})
+            return jsonify({'success': True, 'redirect': '/critical-incidents'})
         return jsonify({'error': 'Invalid credentials'}), 401
     return render_template('auth.html', title='Sign In', is_signup=False)
 
-@app.route('/notes')
+@app.route('/critical-incidents')
 @login_required
 def notes():
     if session.get('role') == 'hr':

@@ -25,7 +25,7 @@
             </div>
             {% for category, messages in submission.data.items() %}
             <div class="submission-item">
-                <strong>{{ category }}:</strong>
+                <strong>{{ category == 'Notes' ? 'Critical Incidents' : category }}:</strong>
                 <ul>
                     {% for message in messages %}
                     <li>{{ message }}</li>

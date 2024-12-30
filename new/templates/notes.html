@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="notes-container">
-    <h2>My Notes</h2>
+    <h2>My Critical Incidents</h2>
 
     <form id="note-form" class="note-form">
         <div class="form-group">
@@ -18,7 +18,7 @@
             <label for="message">Message</label>
             <textarea id="message" name="message" required></textarea>
         </div>
-        <button type="submit">Save Note</button>
+        <button type="submit">Save</button>
     </form>
 
     <div id="notes-list" class="notes-list">
@@ -54,7 +54,7 @@ document.getElementById('note-form').addEventListener('submit', async (e) => {
         if (response.ok) {
             window.location.reload();
         } else {
-            alert('Failed to save note');
+            alert('Failed to save');
         }
     } catch (error) {
         alert('An error occurred. Please try again.');

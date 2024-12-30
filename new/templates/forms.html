@@ -16,7 +16,7 @@
             
             {% if notes and notes.get(category) %}
             <div class="existing-notes">
-                <h4>Your existing notes:</h4>
+                <h4>Your existing critical incidents:</h4>
                 {% for note in notes[category] %}
                 <div class="note-reference">
                     <p>{{ note.message }}</p>
@@ -26,7 +26,7 @@
                         data-category="{{ category }}" 
                         data-message="{{ note.message }}"
                     >
-                        Use this note
+                        Use this critical incident
                     </button>
                 </div>
                 {% endfor %}
@@ -38,7 +38,7 @@
                     <textarea
                         class="form-input"
                         name="{{ category }}[]"
-                        placeholder="Enter your {{ category | lower }} note"
+                        placeholder="Enter your {{ category | lower }} critical incident"
                     ></textarea>
                     <button type="button" class="remove-input-btn" style="display: none;">Remove</button>
                 </div>
@@ -49,7 +49,7 @@
                 class="add-input-btn" 
                 data-category="{{ category }}"
             >
-                Add another {{ category | lower }} note
+                Add another {{ category | lower }} critical incident
             </button>
         </div>
         {% endfor %}
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <textarea
                 class="form-input"
                 name="${category}[]"
-                placeholder="Enter your ${category.toLowerCase()} note"
+                placeholder="Enter your ${category.toLowerCase()} critical incident"
             >${value}</textarea>
             <button type="button" class="remove-input-btn">Remove</button>
         `;
