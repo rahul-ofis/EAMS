@@ -2,18 +2,7 @@
 
 {% block content %}
 <div class="forms-container">
-    <h2>Team Submissions</h2>
-    
-    {% if team_name %}
-    <div class="team-info">
-        <p>You are the manager of <strong>{{ team_name }}</strong> team.</p>
-    </div>
-    {% else %}
-    <div class="team-info">
-        <p>You are not assigned to any team.</p>
-    </div>
-    {% endif %}
-
+    <h2>All Employee Submissions</h2>
     <div class="submissions-list">
         {% for submission in submissions %}
         <div class="submission-card">

@@ -14,10 +14,10 @@
             <div class="form-group">
                 <label for="manager">Manager</label>
                 <select id="manager" name="manager" required>
-                    {% for user in users %}
-                    {% if user.role != 'hr' %}
-                    <option value="{{ user._id }}" {% if user.team %}disabled{% endif %}>
-                        {{ user.name }}{% if user.team %} ({{ user.team.role }} of {{ user.team.name }}){% endif %}
+                    {% for employee in employees %}
+                    {% if employee.role != 'hr' %}
+                    <option value="{{ employee._id }}" {% if employee.team %}disabled{% endif %}>
+                        {{ employee.name }}{% if employee.team %} ({{ employee.team.role }} of {{ employee.team.name }}){% endif %}
                     </option>
                     {% endif %}
                     {% endfor %}
@@ -26,11 +26,11 @@
             <div class="form-group">
                 <label>Select Team Members</label>
                 <div class="checkbox-group">
-                    {% for user in users %}
-                    {% if user.role != 'hr' %}
+                    {% for employee in employees %}
+                    {% if employee.role != 'hr' %}
                     <div class="checkbox-item">
-                        <label for="member-{{ user._id }}">{{ user.name }}{% if user.team %} ({{ user.team.role }} of {{ user.team.name }}){% endif %}</label>
-                        <input type="checkbox" id="member-{{ user._id }}" name="members" value="{{ user._id }}" {% if user.team %}disabled{% endif %}>
+                        <label for="member-{{ employee._id }}">{{ employee.name }}{% if employee.team %} ({{ employee.team.role }} of {{ employee.team.name }}){% endif %}</label>
+                        <input type="checkbox" id="member-{{ employee._id }}" name="members" value="{{ employee._id }}" {% if employee.team %}disabled{% endif %}>
                     </div>
                     {% endif %}
                     {% endfor %}
@@ -69,10 +69,10 @@
             <div class="form-group">
                 <label for="edit-manager">Manager</label>
                 <select id="edit-manager" name="manager" required>
-                    {% for user in users %}
-                    {% if user.role != 'hr' %}
-                    <option value="{{ user._id }}">
-                        {{ user.name }}{% if user.team %} ({{ user.team.role }} of {{ user.team.name }}){% endif %}
+                    {% for employee in employees %}
+                    {% if employee.role != 'hr' %}
+                    <option value="{{ employee._id }}">
+                        {{ employee.name }}{% if employee.team %} ({{ employee.team.role }} of {{ employee.team.name }}){% endif %}
                     </option>
                     {% endif %}
                     {% endfor %}
@@ -81,11 +81,11 @@
             <div class="form-group">
                 <label>Team Members</label>
                 <div class="checkbox-group">
-                    {% for user in users %}
-                    {% if user.role != 'hr' %}
+                    {% for employee in employees %}
+                    {% if employee.role != 'hr' %}
                     <div class="checkbox-item">
-                        <label for="edit-member-{{ user._id }}">{{ user.name }}{% if user.team %} ({{ user.team.role }} of {{ user.team.name }}){% endif %}</label>
-                        <input type="checkbox" id="edit-member-{{ user._id }}" name="members" value="{{ user._id }}">
+                        <label for="edit-member-{{ employee._id }}">{{ employee.name }}{% if employee.team %} ({{ employee.team.role }} of {{ employee.team.name }}){% endif %}</label>
+                        <input type="checkbox" id="edit-member-{{ employee._id }}" name="members" value="{{ employee._id }}">
                     </div>
                     {% endif %}
                     {% endfor %}

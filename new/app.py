@@ -15,7 +15,7 @@ db = client['notes_db']
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
+        if 'employee_id' not in session:
             return redirect('/signin')
         return f(*args, **kwargs)
     return decorated_function
@@ -27,7 +27,24 @@ def index():
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    return redirect('/signin')
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+        role = request.form['role']
+
+        if db.employees.find_one({'email': email}):
+            return jsonify({'error': 'Email already exists'}), 400
+
+        employee = {
+            'name': name,
+            'email': email,
+            'password': password,
+            'role': role
+        }
+        db.employees.insert_one(employee)
+        return jsonify({'success': True, 'redirect': '/signin'})
+    return render_template('auth.html', title='Sign Up', is_signup=True)
 
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
@@ -35,10 +52,10 @@ def signin():
         email = request.form['email']
         password = request.form['password']
 
-        user = db.users.find_one({'email': email, 'password': password})
-        if user:
-            session['user_id'] = str(user['_id'])
-            session['role'] = user['role']
+        employee = db.employees.find_one({'email': email, 'password': password})
+        if employee:
+            session['employee_id'] = str(employee['_id'])
+            session['role'] = employee['role']
             return jsonify({'success': True, 'redirect': '/notes'})
         return jsonify({'error': 'Invalid credentials'}), 401
     return render_template('auth.html', title='Sign In', is_signup=False)
@@ -48,8 +65,8 @@ def signin():
 def notes():
     if session.get('role') == 'hr':
         return redirect('/forms')
-    user_notes = list(db.notes.find({'user_id': session['user_id']}))
-    return render_template('notes.html', notes=user_notes)
+    employee_notes = list(db.notes.find({'employee_id': session['employee_id']}))
+    return render_template('notes.html', notes=employee_notes)
 
 @app.route('/api/notes', methods=['POST'])
 @login_required
@@ -59,7 +76,7 @@ def save_note():
     timestamp = datetime.now()
 
     note = {
-        'user_id': session['user_id'],
+        'employee_id': session['employee_id'],
         'category': category,
         'message': message,
         'created_at': timestamp
@@ -80,12 +97,12 @@ def toggle_form():
     new_status = not form_status['enabled']
     db.form_status.update_one({'id': 1}, {'$set': {'enabled': new_status}})
 
-    # Add notification for all users
+    # Add notification for all employees
     status_text = 'enabled' if new_status else 'disabled'
-    users = db.users.find({'role': {'$ne': 'hr'}})
-    for user in users:
+    employees = db.employees.find({'role': {'$ne': 'hr'}})
+    for employee in employees:
         notification = {
-            'user_id': str(user['_id']),
+            'employee_id': str(employee['_id']),
             'message': f'The form has been {status_text} by HR',
             'created_at': datetime.now()
         }
@@ -101,6 +118,8 @@ def logout():
 @app.route('/forms')
 @login_required
 def forms():
+    if session.get('role') == 'admin':
+        return redirect('/all-submissions')
     try:
         is_hr = session.get('role') == 'hr'
         form_status = db.form_status.find_one({'id': 1})
@@ -111,27 +130,27 @@ def forms():
             form_status = {'enabled': False}
 
         if is_hr:
-            users = list(db.users.find({'role': {'$ne': 'hr'}}))
+            employees = list(db.employees.find({'role': {'$ne': 'hr'}}))
             submissions = list(db.form_submissions.find())
             for submission in submissions:
-                user = db.users.find_one({'_id': ObjectId(submission['user_id'])})
-                submission['user_name'] = user['name'] if user else 'Unknown'
-            return render_template('forms_hr.html', submissions=submissions, form_enabled=form_status['enabled'], users=users)
+                employee = db.employees.find_one({'_id': ObjectId(submission['employee_id'])})
+                submission['employee_name'] = employee['name'] if employee else 'Unknown'
+            return render_template('forms_hr.html', submissions=submissions, form_enabled=form_status['enabled'], employees=employees)
 
         if not form_status['enabled']:
             return render_template('forms.html', form_enabled=False)
 
-        user_notes = {}
-        notes = db.notes.find({'user_id': session['user_id']})
+        employee_notes = {}
+        notes = db.notes.find({'employee_id': session['employee_id']})
         for note in notes:
             category = note['category']
-            if category not in user_notes:
-                user_notes[category] = []
-            user_notes[category].append({
+            if category not in employee_notes:
+                employee_notes[category] = []
+            employee_notes[category].append({
                 'message': note['message']
             })
 
-        return render_template('forms.html', form_enabled=True, notes=user_notes)
+        return render_template('forms.html', form_enabled=True, notes=employee_notes)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -152,7 +171,7 @@ def submit_form():
 
     # Save form submission
     submission = {
-        'user_id': session['user_id'],
+        'employee_id': session['employee_id'],
         'data': form_data,
         'created_at': timestamp
     }
@@ -161,31 +180,31 @@ def submit_form():
     # Save new notes, avoiding duplicates
     for note in new_notes:
         existing_note = db.notes.find_one({
-            'user_id': session['user_id'],
+            'employee_id': session['employee_id'],
             'category': note['category'],
             'message': note['message']
         })
         if not existing_note:
-            note['user_id'] = session['user_id']
+            note['employee_id'] = session['employee_id']
             note['created_at'] = timestamp
             db.notes.insert_one(note)
 
-    # Create notification for the user
+    # Create notification for the employee
     notification = {
-        'user_id': session['user_id'],
+        'employee_id': session['employee_id'],
         'message': 'You have submitted a new form.',
         'created_at': timestamp
     }
     db.notifications.insert_one(notification)
 
     # Create notification for HR
-    user = db.users.find_one({'_id': ObjectId(session['user_id'])})
-    user_name = user['name'] if user else 'Unknown User'
-    hr_users = db.users.find({'role': 'hr'})
-    for hr_user in hr_users:
+    employee = db.employees.find_one({'_id': ObjectId(session['employee_id'])})
+    employee_name = employee['name'] if employee else 'Unknown Employee'
+    hr_employees = db.employees.find({'role': 'hr'})
+    for hr_employee in hr_employees:
         hr_notification = {
-            'user_id': str(hr_user['_id']),
-            'message': f'{user_name} has submitted a new form.',
+            'employee_id': str(hr_employee['_id']),
+            'message': f'{employee_name} has submitted a new form.',
             'created_at': timestamp
         }
         db.notifications.insert_one(hr_notification)
@@ -210,12 +229,12 @@ def create_team():
     }
     db.teams.insert_one(team)
     
-    # Update the user's role to 'manager'
-    db.users.update_one({'_id': ObjectId(manager_id)}, {'$set': {'role': 'manager'}})
+    # Update the employee's role to 'manager'
+    db.employees.update_one({'_id': ObjectId(manager_id)}, {'$set': {'role': 'manager'}})
     
     # Add notifications for manager and members
     notification_manager = {
-        'user_id': manager_id,
+        'employee_id': manager_id,
         'message': f'You have been assigned as the manager of team {team_name}',
         'created_at': datetime.now()
     }
@@ -223,7 +242,7 @@ def create_team():
 
     for member_id in member_ids:
         notification_member = {
-            'user_id': member_id,
+            'employee_id': member_id,
             'message': f'You have been added to team {team_name}',
             'created_at': datetime.now()
         }
@@ -243,7 +262,7 @@ def delete_team(team_id):
 
     # Notify manager about role change
     notification_manager = {
-        'user_id': str(team['manager_id']),
+        'employee_id': str(team['manager_id']),
         'message': f'You are no longer the manager of team {team["name"]}',
         'created_at': datetime.now()
     }
@@ -252,14 +271,14 @@ def delete_team(team_id):
     # Notify members about team deletion
     for member_id in team['member_ids']:
         notification_member = {
-            'user_id': str(member_id),
+            'employee_id': str(member_id),
             'message': f'You have been removed from team {team["name"]}',
             'created_at': datetime.now()
         }
         db.notifications.insert_one(notification_member)
 
-    # Reassign manager role to user
-    db.users.update_one({'_id': ObjectId(team['manager_id'])}, {'$set': {'role': 'user'}})
+    # Reassign manager role to employee
+    db.employees.update_one({'_id': ObjectId(team['manager_id'])}, {'$set': {'role': 'employee'}})
     db.teams.delete_one({'_id': ObjectId(team_id)})
 
     return jsonify({'success': True})
@@ -302,7 +321,7 @@ def edit_team():
     if new_manager_id and team['manager_id'] != new_manager_id:
         # Notify old manager
         notification_old_manager = {
-            'user_id': str(team['manager_id']),
+            'employee_id': str(team['manager_id']),
             'message': f'You are no longer the manager of team {team_name}',
             'created_at': datetime.now()
         }
@@ -310,15 +329,15 @@ def edit_team():
 
         # Notify new manager
         notification_new_manager = {
-            'user_id': new_manager_id,
+            'employee_id': new_manager_id,
             'message': f'You have been assigned as the manager of team {team_name}',
             'created_at': datetime.now()
         }
         db.notifications.insert_one(notification_new_manager)
 
         # Update roles
-        db.users.update_one({'_id': ObjectId(team['manager_id'])}, {'$set': {'role': 'user'}})
-        db.users.update_one({'_id': ObjectId(new_manager_id)}, {'$set': {'role': 'manager'}})
+        db.employees.update_one({'_id': ObjectId(team['manager_id'])}, {'$set': {'role': 'employee'}})
+        db.employees.update_one({'_id': ObjectId(new_manager_id)}, {'$set': {'role': 'manager'}})
         team_update = {'name': team_name, 'manager_id': new_manager_id, 'member_ids': new_member_ids}
     else:
         team_update = {'name': team_name, 'member_ids': new_member_ids}
@@ -330,7 +349,7 @@ def edit_team():
     # Notify removed members
     for member_id in old_member_ids - new_member_ids_set:
         notification = {
-            'user_id': member_id,
+            'employee_id': member_id,
             'message': f'You have been removed from team {team_name}',
             'created_at': datetime.now()
         }
@@ -339,7 +358,7 @@ def edit_team():
     # Notify new members
     for member_id in new_member_ids_set - old_member_ids:
         notification = {
-            'user_id': member_id,
+            'employee_id': member_id,
             'message': f'You have been added to team {team_name}',
             'created_at': datetime.now()
         }
@@ -359,17 +378,17 @@ def teams():
         return redirect('/forms')
 
     teams = list(db.teams.find())
-    users = list(db.users.find())
+    employees = list(db.employees.find())
     for team in teams:
-        manager = db.users.find_one({'_id': ObjectId(team['manager_id'])})
+        manager = db.employees.find_one({'_id': ObjectId(team['manager_id'])})
         team['manager_name'] = manager['name'] if manager else 'Unknown'
-        team['members'] = [db.users.find_one({'_id': ObjectId(member_id)})['name'] for member_id in team['member_ids']]
-        for user in users:
-            if str(user['_id']) == str(team['manager_id']):
-                user['team'] = {'name': team['name'], 'role': 'Manager', '_id': str(team['_id'])}
-            elif str(user['_id']) in team['member_ids']:
-                user['team'] = {'name': team['name'], 'role': 'Member', '_id': str(team['_id'])}
-    return render_template('teams.html', teams=teams, users=users)
+        team['members'] = [db.employees.find_one({'_id': ObjectId(member_id)})['name'] for member_id in team['member_ids']]
+        for employee in employees:
+            if str(employee['_id']) == str(team['manager_id']):
+                employee['team'] = {'name': team['name'], 'role': 'Manager', '_id': str(team['_id'])}
+            elif str(employee['_id']) in team['member_ids']:
+                employee['team'] = {'name': team['name'], 'role': 'Member', '_id': str(team['_id'])}
+    return render_template('teams.html', teams=teams, employees=employees)
 
 @app.route('/team-submissions')
 @login_required
@@ -377,14 +396,14 @@ def team_submissions():
     if session.get('role') != 'manager':
         return redirect('/forms')
 
-    team = db.teams.find_one({'manager_id': session['user_id']})
+    team = db.teams.find_one({'manager_id': session['employee_id']})
     if team:
         team_name = team['name']
         member_ids = team['member_ids']
-        submissions = list(db.form_submissions.find({'user_id': {'$in': member_ids}}))
+        submissions = list(db.form_submissions.find({'employee_id': {'$in': member_ids}}))
         for submission in submissions:
-            user = db.users.find_one({'_id': ObjectId(submission['user_id'])})
-            submission['user_name'] = user['name'] if user else 'Unknown'
+            employee = db.employees.find_one({'_id': ObjectId(submission['employee_id'])})
+            submission['employee_name'] = employee['name'] if employee else 'Unknown'
         return render_template('forms_manager.html', team_name=team_name, submissions=submissions)
     else:
         return render_template('forms_manager.html', team_name=None, submissions=[])
@@ -393,7 +412,7 @@ def team_submissions():
 @login_required
 def get_notifications():
     notifications = list(db.notifications.find(
-        {'user_id': session['user_id']},
+        {'employee_id': session['employee_id']},
         {'_id': 1, 'message': 1, 'created_at': 1, 'read': 1}
     ).sort('created_at', -1))
     
@@ -419,23 +438,23 @@ def mark_notifications_read():
         db.notifications.update_many(
             {
                 '_id': {'$in': [ObjectId(id) for id in notification_ids]},
-                'user_id': session['user_id']
+                'employee_id': session['employee_id']
             },
             {'$set': {'read': True}}
         )
     return jsonify({'success': True})
 
-@app.route('/user-management')
+@app.route('/employee-management')
 @login_required
-def user_management():
+def employee_management():
     if session.get('role') != 'hr':
         return redirect('/forms')
-    users = list(db.users.find())
-    return render_template('user_management.html', users=users)
+    employees = list(db.employees.find())
+    return render_template('employee_management.html', employees=employees)
 
-@app.route('/api/add-user', methods=['POST'])
+@app.route('/api/add-employee', methods=['POST'])
 @login_required
-def add_user():
+def add_employee():
     if session.get('role') != 'hr':
         return jsonify({'error': 'Unauthorized'}), 403
 
@@ -444,64 +463,79 @@ def add_user():
     password = request.form['password']
     role = request.form['role']
 
-    if db.users.find_one({'email': email}):
+    if db.employees.find_one({'email': email}):
         return jsonify({'error': 'Email already exists'}), 400
 
-    user = {
+    employee = {
         'name': name,
         'email': email,
         'password': password,
         'role': role
     }
-    db.users.insert_one(user)
+    db.employees.insert_one(employee)
     return jsonify({'success': True})
 
-@app.route('/api/delete-user/<user_id>', methods=['DELETE'])
+@app.route('/api/delete-employee/<employee_id>', methods=['DELETE'])
 @login_required
-def delete_user(user_id):
+def delete_employee(employee_id):
     if session.get('role') != 'hr':
         return jsonify({'error': 'Unauthorized'}), 403
 
-    db.users.delete_one({'_id': ObjectId(user_id)})
+    db.employees.delete_one({'_id': ObjectId(employee_id)})
     return jsonify({'success': True})
 
-@app.route('/api/get-user/<user_id>', methods=['GET'])
+@app.route('/api/get-employee/<employee_id>', methods=['GET'])
 @login_required
-def get_user(user_id):
+def get_employee(employee_id):
     if session.get('role') != 'hr':
         return jsonify({'error': 'Unauthorized'}), 403
 
-    user = db.users.find_one({'_id': ObjectId(user_id)})
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+    employee = db.employees.find_one({'_id': ObjectId(employee_id)})
+    if not employee:
+        return jsonify({'error': 'Employee not found'}), 404
 
-    user['_id'] = str(user['_id'])
-    return jsonify(user)
+    employee['_id'] = str(employee['_id'])
+    return jsonify(employee)
 
-@app.route('/api/edit-user', methods=['POST'])
+@app.route('/api/edit-employee', methods=['POST'])
 @login_required
-def edit_user():
+def edit_employee():
     if session.get('role') != 'hr':
         return jsonify({'error': 'Unauthorized'}), 403
 
-    user_id = request.form['user_id']
-    name = request.form['name']
-    email = request.form['email']
-    role = request.form['role']
+    try:
+        employee_id = request.form['employee_id']
+        name = request.form['name']
+        email = request.form['email']
+        role = request.form['role']
+    except KeyError as e:
+        return jsonify({'error': f'Missing field: {str(e)}'}), 400
 
-    db.users.update_one(
-        {'_id': ObjectId(user_id)},
+    db.employees.update_one(
+        {'_id': ObjectId(employee_id)},
         {'$set': {'name': name, 'email': email, 'role': role}}
     )
     return jsonify({'success': True})
+
+@app.route('/all-submissions')
+@login_required
+def all_submissions():
+    if session.get('role') != 'admin':
+        return redirect('/forms')
+
+    submissions = list(db.form_submissions.find())
+    for submission in submissions:
+        employee = db.employees.find_one({'_id': ObjectId(submission['employee_id'])})
+        submission['employee_name'] = employee['name'] if employee else 'Unknown'
+    return render_template('forms_admin.html', submissions=submissions)
 
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
         db.form_status.insert_one({'id': 1, 'enabled': False})
     
-    # Add default HR user if not exists
-    if not db.users.find_one({'email': 'hr@gmail.com'}):
-        db.users.insert_one({
+    # Add default HR employee if not exists
+    if not db.employees.find_one({'email': 'hr@gmail.com'}):
+        db.employees.insert_one({
             'name': 'HR',
             'email': 'hr@gmail.com',
             'password': '1234',  

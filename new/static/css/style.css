@@ -734,14 +734,14 @@ button[type="submit"]:hover {
 
 /* ...existing code... */
 
-.user-management-container {
+.employee-management-container {
     padding: 20px;
     background-color: var(--bg-color);
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.user-management {
+.employee-management {
     margin-bottom: 20px;
     padding: 20px;
     background-color: var(--card-bg);
@@ -749,12 +749,12 @@ button[type="submit"]:hover {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.user-management h3 {
+.employee-management h3 {
     margin-bottom: 15px;
     color: var(--primary-color);
 }
 
-.user-card {
+.employee-card {
     border: 1px solid var(--border-color);
     padding: 15px;
     margin-bottom: 10px;
@@ -765,22 +765,22 @@ button[type="submit"]:hover {
     flex-direction: column;
 }
 
-.user-card h3 {
+.employee-card h3 {
     margin-top: 0;
     color: var(--primary-color);
 }
 
-.user-card p {
+.employee-card p {
     margin: 5px 0;
 }
 
-.user-card .button-group {
+.employee-card .button-group {
     display: flex;
     gap: 10px;
     margin-top: 10px;
 }
 
-.user-card button {
+.employee-card button {
     padding: 0.5rem 1rem;
     background-color: var(--primary-color);
     color: white;
@@ -790,18 +790,18 @@ button[type="submit"]:hover {
     transition: background-color 0.2s;
 }
 
-.user-card button.edit-user-btn {
+.employee-card button.edit-employee-btn {
     background-color: var(--primary-color);
 }
 
-.user-card button.edit-user-btn:hover {
+.employee-card button.edit-employee-btn:hover {
     background-color: var(--primary-hover);
 }
 
-.user-card button.delete-user-btn {
+.employee-card button.delete-employee-btn {
     background-color: #ef4444;
 }
 
-.user-card button.delete-user-btn:hover {
+.employee-card button.delete-employee-btn:hover {
     background-color: #dc2626;
 }

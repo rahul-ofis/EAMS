@@ -13,7 +13,7 @@
         {% for submission in submissions %}
         <div class="submission-card">
             <div class="submission-header">
-                Submitted by: {{ submission.user_name }}
+                Submitted by: {{ submission.employee_name }}
                 <span class="submission-date">
                     {{ submission.created_at.strftime('%B %d, %Y, %I:%M:%S %p') }}
                 </span>
