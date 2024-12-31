@@ -47,17 +47,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Fetch notes for form
-    const fetchNotesButtons = document.querySelectorAll('.fetch-notes');
-    fetchNotesButtons.forEach(button => {
+    // Fetch critical incidents for form
+    const fetchCriticalIncidentsButtons = document.querySelectorAll('.fetch-critical-incidents');
+    fetchCriticalIncidentsButtons.forEach(button => {
         button.addEventListener('click', function() {
             const category = this.dataset.category;
-            fetch(`/get_notes/${category}`)
+            fetch(`/get_critical-incidents/${category}`)
                 .then(response => response.json())
-                .then(notes => {
+                .then(critical_incidents => {
                     const input = document.getElementById(category);
-                    if (notes.length > 0) {
-                        input.value = notes[notes.length - 1]; // Set the most recent note
+                    if (critical_incidents.length > 0) {
+                        input.value = critical_incidents[critical_incidents.length - 1]; // Set the most recent critical incident
                     }
                 });
         });

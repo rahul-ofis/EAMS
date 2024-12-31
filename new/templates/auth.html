@@ -61,7 +61,7 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    window.location.href = data.redirect || '/notes';
+                    window.location.href = data.redirect || '/critical-incidents';
                 } else {
                     alert(data.error);
                 }

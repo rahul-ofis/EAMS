@@ -3,7 +3,7 @@
 {% block content %}
 <div class="forms-container">
     <h2>Team Submissions</h2>
-    
+
     {% if team_name %}
     <div class="team-info">
         <p>You are the manager of <strong>{{ team_name }}</strong> team.</p>
@@ -25,7 +25,7 @@
             </div>
             {% for category, messages in submission.data.items() %}
             <div class="submission-item">
-                <strong>{{ category }}:</strong>
+                <strong>{{ 'Critical Incidents' if category == 'Critical Incidents' else category }}:</strong>
                 <ul>
                     {% for message in messages %}
                     <li>{{ message }}</li>
