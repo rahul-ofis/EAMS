@@ -821,3 +821,56 @@ button[type="submit"]:hover {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-bottom: 1rem;
 }
+
+/* Submissions Table Styles */
+.submissions-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--card-bg);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+}
+
+.submissions-table th,
+.submissions-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.submissions-table th {
+    background-color: #f8fafc;
+    font-weight: 500;
+    color: var(--text-color);
+    white-space: nowrap;
+}
+
+.submissions-table td {
+    vertical-align: top;
+}
+
+.submissions-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.submissions-table ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.submissions-table li {
+    margin-bottom: 0.25rem;
+}
+
+.submissions-table li:last-child {
+    margin-bottom: 0;
+}
+
+/* Add horizontal scroll for small screens */
+.submissions-container {
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}

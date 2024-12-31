@@ -135,11 +135,19 @@ def forms():
             for submission in submissions:
                 employee = db.employees.find_one({'_id': ObjectId(submission['employee_id'])})
                 submission['employee_name'] = employee['name'] if employee else 'Unknown'
+                submission['employee_role'] = employee['role'] if employee else 'Unknown'
             return render_template('forms_hr.html', submissions=submissions, form_enabled=form_status['enabled'], employees=employees)
 
-        if not form_status['enabled']:
+        if not form_status['enabled'] and not is_hr:
             return render_template('forms.html', form_enabled=False)
 
+        # Get the latest submission for this employee
+        submission = db.form_submissions.find_one(
+            {'employee_id': session['employee_id']},
+            sort=[('created_at', -1)]
+        )
+
+        # Get employee's critical incidents
         employee_critical_incidents = {}
         critical_incidents = db.critical_incidents.find({'employee_id': session['employee_id']})
         for critical_incident in critical_incidents:
@@ -150,7 +158,7 @@ def forms():
                 'message': critical_incident['message']
             })
 
-        return render_template('forms.html', form_enabled=True, critical_incidents=employee_critical_incidents)
+        return render_template('forms.html', form_enabled=True, critical_incidents=employee_critical_incidents, submission=submission)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -160,64 +168,50 @@ def submit_form():
     if session.get('role') == 'hr':
         return jsonify({'error': 'Unauthorized'}), 403
 
-    data = request.json
-    form_data = data.get('formData', {})
-    new_critical_incidents = data.get('newCriticalIncidents', [])
+    try:
+        data = request.json
+        form_data = data.get('formData', {})
+        new_critical_incidents = data.get('newCriticalIncidents', [])
 
-    if not form_data:
-        return jsonify({'error': 'At least one field must be filled'}), 400
+        if not form_data:
+            return jsonify({'error': 'At least one field must be filled'}), 400
 
-    timestamp = datetime.now()
+        timestamp = datetime.now()
 
-    # Save form submission
-    submission = {
-        'employee_id': session['employee_id'],
-        'data': form_data,
-        'created_at': timestamp
-    }
-    db.form_submissions.insert_one(submission)
-
-    # Save new critical incidents, avoiding duplicates
-    for critical_incident in new_critical_incidents:
-        existing_critical_incident = db.critical_incidents.find_one({
+        # Save new form submission
+        submission = {
             'employee_id': session['employee_id'],
-            'category': critical_incident['category'],
-            'message': critical_incident['message']
-        })
-        if not existing_critical_incident:
-            critical_incident['employee_id'] = session['employee_id']
-            critical_incident['created_at'] = timestamp
-            db.critical_incidents.insert_one(critical_incident)
-
-    # Create notification for the employee
-    notification = {
-        'employee_id': session['employee_id'],
-        'message': 'You have submitted a new form.',
-        'created_at': timestamp
-    }
-    db.notifications.insert_one(notification)
-
-    # Create notification for HR
-    employee = db.employees.find_one({'_id': ObjectId(session['employee_id'])})
-    employee_name = employee['name'] if employee else 'Unknown Employee'
-    hr_employees = db.employees.find({'role': 'hr'})
-    for hr_employee in hr_employees:
-        hr_notification = {
-            'employee_id': str(hr_employee['_id']),
-            'message': f'{employee_name} has submitted a new form.',
+            'data': form_data,
             'created_at': timestamp
         }
-        db.notifications.insert_one(hr_notification)
+        result = db.form_submissions.insert_one(submission)
+        if not result.inserted_id:
+            return jsonify({'error': 'Failed to save submission'}), 500
 
-    return jsonify({'success': True})
+        # Save new critical incidents
+        for critical_incident in new_critical_incidents:
+            existing = db.critical_incidents.find_one({
+                'employee_id': session['employee_id'],
+                'category': critical_incident['category'],
+                'message': critical_incident['message']
+            })
+            
+            if not existing:
+                critical_incident['employee_id'] = session['employee_id']
+                critical_incident['created_at'] = timestamp
+                db.critical_incidents.insert_one(critical_incident)
+
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error in submit_form: {str(e)}")  # For debugging
+        return jsonify({'error': 'An error occurred while submitting the form'}), 500
 
 @app.route('/api/create-team', methods=['POST'])
 @login_required
 def create_team():
     if session.get('role') != 'hr':
         return jsonify({'error': 'Unauthorized'}), 403
-    count =0
-    print(count)
+
     team_name = request.form['team_name']
     manager_id = request.form['manager']
     member_ids = request.form.getlist('members')
@@ -527,11 +521,14 @@ def all_submissions():
     for submission in submissions:
         employee = db.employees.find_one({'_id': ObjectId(submission['employee_id'])})
         submission['employee_name'] = employee['name'] if employee else 'Unknown'
+        submission['employee_role'] = employee['role'] if employee else 'Unknown'
     return render_template('forms_admin.html', submissions=submissions)
 
 @app.route('/goals')
 @login_required
 def goals():
+    if session.get('role') == 'admin':
+        return redirect('/all-submissions')
     user_id = session['employee_id']
     user_goals = list(db.goals.find({'employee_id': user_id}))
     return render_template('goals.html', goals=user_goals)
@@ -551,6 +548,90 @@ def save_goal():
     }
     db.goals.insert_one(goal)
     return jsonify({'success': True})
+
+@app.route('/api/update-feedback/<submission_id>', methods=['POST'])
+@login_required
+def update_feedback(submission_id):
+    if session.get('role') != 'manager':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        updates = request.json
+        submission = db.form_submissions.find_one({'_id': ObjectId(submission_id)})
+        
+        if not submission:
+            return jsonify({'error': 'Submission not found'}), 404
+
+        # Verify the submission belongs to a team member
+        team = db.teams.find_one({'manager_id': session['employee_id']})
+        if not team or submission['employee_id'] not in team['member_ids']:
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        # Update the submission data
+        submission['data'].update(updates)
+        db.form_submissions.update_one(
+            {'_id': ObjectId(submission_id)},
+            {'$set': {'data': submission['data']}}
+        )
+
+        # Add notification for the employee
+        notification = {
+            'employee_id': submission['employee_id'],
+            'message': 'Your manager has provided feedback on your submission.',
+            'created_at': datetime.now()
+        }
+        db.notifications.insert_one(notification)
+
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/submit-hr-feedback/<submission_id>', methods=['POST'])
+@login_required
+def submit_hr_feedback(submission_id):
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        updates = request.json
+        submission = db.form_submissions.find_one({'_id': ObjectId(submission_id)})
+        
+        if not submission:
+            return jsonify({'error': 'Submission not found'}), 404
+
+        # Verify the submission is from a manager
+        employee = db.employees.find_one({'_id': ObjectId(submission['employee_id'])})
+        if not employee or employee['role'] != 'manager':
+            return jsonify({'error': 'Unauthorized - Submission is not from a manager'}), 403
+
+        # Update the submission data
+        submission['data'].update(updates)
+        db.form_submissions.update_one(
+            {'_id': ObjectId(submission_id)},
+            {'$set': {'data': submission['data']}}
+        )
+
+        # Add notification for the manager
+        notification = {
+            'employee_id': submission['employee_id'],
+            'message': 'HR has provided feedback on your submission.',
+            'created_at': datetime.now()
+        }
+        db.notifications.insert_one(notification)
+
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error in submit_hr_feedback: {str(e)}")  # For debugging
+        return jsonify({'error': 'An error occurred while submitting feedback'}), 500
+
+@app.route('/my-submissions')
+@login_required
+def my_submissions():
+    submissions = list(db.form_submissions.find({'employee_id': session['employee_id']}))
+    for submission in submissions:
+        submission['_id'] = str(submission['_id'])
+        submission['created_at'] = submission['created_at'].strftime('%B %d, %Y, %I:%M:%S %p')
+    return render_template('my_submissions.html', submissions=submissions)
 
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):

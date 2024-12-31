@@ -10,11 +10,14 @@
     </div>
     {% else %}
     <form id="submission-form" class="form">
-        {% for category in ['Work', 'Personal', 'Ideas', 'Tasks'] %}
-        <div class="form-group">
-            <label for="{{ category }}-inputs">{{ category }}</label>
+        {% for category in critical_incidents.keys() %}
+        <div class="form-group" id="{{ category }}-group">
+            <label>
+                <input type="checkbox" id="{{ category }}-checkbox" name="{{ category }}-checkbox" checked>
+                {{ category }}
+            </label>
 
-            {% if critical_incidents and critical_incidents.get(category) %}
+            {% if critical_incidents[category] %}
             <div class="existing-critical-incidents">
                 <h4>Your existing critical incidents:</h4>
                 {% for critical_incident in critical_incidents[category] %}
@@ -51,6 +54,72 @@
             >
                 Add another {{ category | lower }} critical incident
             </button>
+
+            <div class="additional-fields" id="{{ category }}-additional-fields">
+                <div class="form-group">
+                    <label for="{{ category }}-measure">Measure of Success</label>
+                    <input type="text" id="{{ category }}-measure" name="{{ category }}-measure" data-required="true">
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ category }}-completion">Percentage of Completion</label>
+                    <select id="{{ category }}-completion" name="{{ category }}-completion" data-required="true">
+                        <option value=">=110%">>=110%</option>
+                        <option value="90-109%">90-109%</option>
+                        <option value="70-89%">70-89%</option>
+                        <option value="50-69%">50-69%</option>
+                        <option value="below 50%">below 50%</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ category }}-comments">Comments on Achievement</label>
+                    <textarea id="{{ category }}-comments" name="{{ category }}-comments" data-required="true"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ category }}-self-rating">Self-Assessment Rating</label>
+                    <select id="{{ category }}-self-rating" name="{{ category }}-self-rating" data-required="true">
+                        <option value="Excellent">Excellent</option>
+                        <option value="Very Good">Very Good</option>
+                        <option value="Good">Good</option>
+                        <option value="Needs Improvement">Needs Improvement</option>
+                        <option value="Below Expectations">Below Expectations</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ category }}-manager-rating">
+                        {% if session.get('role') == 'manager' %}
+                        HR Rating
+                        {% else %}
+                        Reporting Manager Rating
+                        {% endif %}
+                    </label>
+                    <select id="{{ category }}-manager-rating" name="{{ category }}-manager-rating" disabled required>
+                        {% if submission and submission.data[category + '-manager-rating'] %}
+                            <option value="Excellent" {% if submission.data[category + '-manager-rating'] == 'Excellent' %}selected{% endif %}>Excellent</option>
+                            <option value="Very Good" {% if submission.data[category + '-manager-rating'] == 'Very Good' %}selected{% endif %}>Very Good</option>
+                            <option value="Good" {% if submission.data[category + '-manager-rating'] == 'Good' %}selected{% endif %}>Good</option>
+                            <option value="Needs Improvement" {% if submission.data[category + '-manager-rating'] == 'Needs Improvement' %}selected{% endif %}>Needs Improvement</option>
+                            <option value="Below Expectations" {% if submission.data[category + '-manager-rating'] == 'Below Expectations' %}selected{% endif %}>Below Expectations</option>
+                        {% else %}
+                            <option value="" selected>Unavailable</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ category }}-manager-comments">
+                        {% if session.get('role') == 'manager' %}
+                        HR Comments
+                        {% else %}
+                        Comments by Reporting Manager
+                        {% endif %}
+                    </label>
+                    <textarea id="{{ category }}-manager-comments" name="{{ category }}-manager-comments" disabled required>{{ submission.data[category + '-manager-comments'] if submission and submission.data[category + '-manager-comments'] else 'Unavailable' }}</textarea>
+                </div>
+            </div>
         </div>
         {% endfor %}
 
@@ -63,8 +132,6 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Remove the unused formData initialization
-
     function addInputField(category, value = '') {
         const container = document.getElementById(`${category}-inputs`);
         const inputGroup = document.createElement('div');
@@ -91,7 +158,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Add input button handlers
     document.querySelectorAll('.add-input-btn').forEach(button => {
         button.addEventListener('click', () => {
             const category = button.dataset.category;
@@ -99,7 +165,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Remove input button handler
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-input-btn')) {
             const inputGroup = e.target.closest('.input-group');
@@ -109,42 +174,80 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Use critical incident button handler
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('use-critical-incident-btn')) {
-            const category = e.target.dataset.category;
-            const message = e.target.dataset.message;
+    document.querySelectorAll('.use-critical-incident-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const category = button.dataset.category;
+            const message = button.dataset.message;
             addInputField(category, message);
-        }
+        });
     });
 
-    // Form submission handler
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const category = e.target.id.replace('-checkbox', '');
+            const additionalFields = document.getElementById(`${category}-additional-fields`);
+            const fields = additionalFields.querySelectorAll('[data-required="true"]');
+            
+            if (e.target.checked) {
+                additionalFields.style.display = 'block';
+                fields.forEach(field => field.setAttribute('required', ''));
+            } else {
+                additionalFields.style.display = 'none';
+                fields.forEach(field => field.removeAttribute('required'));
+            }
+        });
+    });
+
     const form = document.getElementById('submission-form');
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = {};  // Move formData declaration inside the submit handler
-            const uniqueCriticalIncidents = new Map(); // Use Map to track unique category-message combinations
+            const formData = {};
+            const uniqueCriticalIncidents = new Map();
+            let hasSelectedCategory = false;
 
-            // Gather all inputs for each category
-            ['Work', 'Personal', 'Ideas', 'Tasks'].forEach(category => {
-                const inputs = document.querySelectorAll(`textarea[name="${category}[]"]`);
-                const values = Array.from(inputs)
-                    .map(input => input.value.trim())
-                    .filter(value => value !== '');
+            // Get all category groups
+            const categories = form.querySelectorAll('.form-group[id$="-group"]');
+            categories.forEach(categoryGroup => {
+                const categoryId = categoryGroup.id.replace('-group', '');
+                const categoryCheckbox = document.getElementById(`${categoryId}-checkbox`);
+                
+                // Only process if category is checked
+                if (categoryCheckbox && categoryCheckbox.checked) {
+                    // Get critical incident inputs for this category
+                    const inputs = categoryGroup.querySelectorAll(`textarea[name="${categoryId}[]"]`);
+                    const values = Array.from(inputs)
+                        .map(input => input.value.trim())
+                        .filter(value => value !== '');
 
-                if (values.length > 0) {
-                    const uniqueValues = [];
-                    values.forEach(message => {
-                        const key = `${category}-${message}`; // Create unique key
-                        if (!uniqueCriticalIncidents.has(key)) {
-                            uniqueCriticalIncidents.set(key, { category, message });
-                            uniqueValues.push(message);
-                        }
-                    });
-                    formData[category] = uniqueValues;
+                    // Store critical incidents if any exist
+                    if (values.length > 0) {
+                        hasSelectedCategory = true;
+                        formData[categoryId] = values;
+
+                        // Track unique critical incidents
+                        values.forEach(message => {
+                            const key = `${categoryId}-${message}`;
+                            if (!uniqueCriticalIncidents.has(key)) {
+                                uniqueCriticalIncidents.set(key, { category: categoryId, message });
+                            }
+                        });
+
+                        // Get additional fields
+                        formData[`${categoryId}-measure`] = document.getElementById(`${categoryId}-measure`).value;
+                        formData[`${categoryId}-completion`] = document.getElementById(`${categoryId}-completion`).value;
+                        formData[`${categoryId}-comments`] = document.getElementById(`${categoryId}-comments`).value;
+                        formData[`${categoryId}-self-rating`] = document.getElementById(`${categoryId}-self-rating`).value;
+                        formData[`${categoryId}-manager-rating`] = '';
+                        formData[`${categoryId}-manager-comments`] = '';
+                    }
                 }
             });
+
+            if (!hasSelectedCategory) {
+                alert('Please fill out at least one category with critical incidents');
+                return;
+            }
 
             try {
                 const response = await fetch('/api/submit-form', {
