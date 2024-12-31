@@ -46,7 +46,9 @@
             <select id="recipient" name="recipient" required>
                 <option value="">Select a recipient</option>
                 {% for employee in employees %}
-                <option value="{{ employee._id }}">{{ employee.name }}</option>
+                    {% if employee.role != 'hr' %}
+                    <option value="{{ employee._id }}">{{ employee.name }}</option>
+                    {% endif %}
                 {% endfor %}
                 {% for category in categories %}
                 <option value="category_{{ category }}">{{ category }}</option>

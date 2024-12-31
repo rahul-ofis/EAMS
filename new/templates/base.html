@@ -69,12 +69,14 @@
             My Submissions
         </a>
         {% endif %}
-        <a href="/goals" class="sidebar-link" {% if session.get('role') == 'admin' %}style="display: none;"{% endif %}>
+        {% if session.get('role') != 'hr' and session.get('role') != 'admin' %}
+        <a href="/goals" class="sidebar-link">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5zm0 7l10 5-10 5-10-5 10-5zm0 7l10 5-10 5-10-5 10-5z"></path>
             </svg>
             Goals
         </a>
+        {% endif %}
         {% if session.get('role') == 'manager' %}
         <a href="/team-submissions" class="sidebar-link">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

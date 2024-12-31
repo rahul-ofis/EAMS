@@ -529,6 +529,8 @@ def all_submissions():
 def goals():
     if session.get('role') == 'admin':
         return redirect('/all-submissions')
+    if session.get('role') == 'hr':
+        return redirect('/forms')
     user_id = session['employee_id']
     user_goals = list(db.goals.find({'employee_id': user_id}))
     return render_template('goals.html', goals=user_goals)
