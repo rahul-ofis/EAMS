@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="submissions-container">
+    <h2>My Submissions</h2>
+    <table class="submissions-table">
+        <thead>
+            <tr>
+                <th>Submission Date</th>
+                <th>Category</th>
+                <th>Critical Incident</th>
+                <th>Measure of Success</th>
+                <th>Percentage of Completion</th>
+                <th>Comments on Achievement</th>
+                <th>Self-Assessment Rating</th>
+                <th>Manager Rating</th>
+                <th>Manager Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for submission in submissions %}
+            {% for category, messages in submission.data.items() %}
+            {% if not category.endswith('-measure') and not category.endswith('-completion') and not category.endswith('-comments') and not category.endswith('-self-rating') and not category.endswith('-manager-rating') and not category.endswith('-manager-comments') %}
+            <tr>
+                <td>{{ submission.created_at }}</td>
+                <td>{{ category }}</td>
+                <td>
+                    <ul>
+                        {% for message in messages %}
+                        <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td>{{ submission.data[category + '-measure'] }}</td>
+                <td>{{ submission.data[category + '-completion'] }}</td>
+                <td>{{ submission.data[category + '-comments'] }}</td>
+                <td>{{ submission.data[category + '-self-rating'] }}</td>
+                <td>{{ submission.data[category + '-manager-rating'] }}</td>
+                <td>{{ submission.data[category + '-manager-comments'] }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

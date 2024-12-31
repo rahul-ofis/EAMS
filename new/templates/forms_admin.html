@@ -13,6 +13,7 @@
                 </span>
             </div>
             {% for category, messages in submission.data.items() %}
+            {% if not category.endswith('-measure') and not category.endswith('-completion') and not category.endswith('-comments') and not category.endswith('-self-rating') and not category.endswith('-manager-rating') and not category.endswith('-manager-comments') %}
             <div class="submission-item">
                 <strong>{{ category }}:</strong>
                 <ul>
@@ -20,7 +21,44 @@
                     <li>{{ message }}</li>
                     {% endfor %}
                 </ul>
+                <div class="form-group">
+                    <label>Measure of Success</label>
+                    <input type="text" value="{{ submission.data[category + '-measure'] }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Percentage of Completion</label>
+                    <input type="text" value="{{ submission.data[category + '-completion'] }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Comments on Achievement</label>
+                    <textarea disabled>{{ submission.data[category + '-comments'] }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Self-Assessment Rating</label>
+                    <input type="text" value="{{ submission.data[category + '-self-rating'] }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>
+                        {% if submission.employee_role == 'manager' %}
+                        HR Rating
+                        {% else %}
+                        Reporting Manager Rating
+                        {% endif %}
+                    </label>
+                    <input type="text" value="{{ submission.data[category + '-manager-rating'] }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>
+                        {% if submission.employee_role == 'manager' %}
+                        HR Comments
+                        {% else %}
+                        Comments by Reporting Manager
+                        {% endif %}
+                    </label>
+                    <textarea disabled>{{ submission.data[category + '-manager-comments'] }}</textarea>
+                </div>
             </div>
+            {% endif %}
             {% endfor %}
         </div>
         {% endfor %}
