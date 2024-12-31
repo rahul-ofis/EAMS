@@ -175,9 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const membersCheckboxes = document.querySelectorAll('#edit-team-form input[type="checkbox"]');
                     membersCheckboxes.forEach(checkbox => {
                         checkbox.checked = team.member_ids.includes(checkbox.value);
+                        checkbox.disabled = checkbox.checked ? false : !!document.querySelector(`#member-${checkbox.value}`).disabled;
+                    });
+                    const managerSelect = document.getElementById('edit-manager');
+                    managerSelect.querySelectorAll('option').forEach(option => {
+                        option.disabled = !team.member_ids.includes(option.value) && option.value !== team.manager_id;
                     });
                     document.getElementById('edit-team-modal').style.display = 'block';
-                    window.edit_team_id = team._id; // Set the global variable for the current team being edited
                 } else {
                     console.error('Failed to fetch team details');
                     alert('Failed to fetch team details');
