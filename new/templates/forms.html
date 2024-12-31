@@ -12,10 +12,13 @@
     <form id="submission-form" class="form">
         {% for category in critical_incidents.keys() %}
         <div class="form-group" id="{{ category }}-group">
-            <label>
-                <input type="checkbox" id="{{ category }}-checkbox" name="{{ category }}-checkbox" checked>
-                {{ category }}
-            </label>
+            <div class="category-header">
+                <span class="category-title">{{ category }}</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="{{ category }}-checkbox" name="{{ category }}-checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
 
             {% if critical_incidents[category] %}
             <div class="existing-critical-incidents">
@@ -185,17 +188,23 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
             const category = e.target.id.replace('-checkbox', '');
+            const categoryGroup = document.getElementById(`${category}-group`);
             const additionalFields = document.getElementById(`${category}-additional-fields`);
             const fields = additionalFields.querySelectorAll('[data-required="true"]');
             
             if (e.target.checked) {
+                categoryGroup.classList.remove('deselected');
                 additionalFields.style.display = 'block';
                 fields.forEach(field => field.setAttribute('required', ''));
             } else {
+                categoryGroup.classList.add('deselected');
                 additionalFields.style.display = 'none';
                 fields.forEach(field => field.removeAttribute('required'));
             }
         });
+        
+        // Initialize the state on page load
+        checkbox.dispatchEvent(new Event('change'));
     });
 
     const form = document.getElementById('submission-form');

@@ -874,3 +874,328 @@ button[type="submit"]:hover {
     overflow-x: auto;
     padding-bottom: 1rem;
 }
+
+/* View Toggle Switch */
+.view-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 20px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: var(--primary-color);
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--primary-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Table View Enhancements */
+.submissions-table-container {
+    overflow-x: auto;
+    background-color: var(--card-bg);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+}
+
+.submissions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.submissions-table th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    text-align: left;
+    padding: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.submissions-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.submissions-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.submissions-table ul {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.submissions-table td ul li {
+    margin-bottom: 0.25rem;
+}
+
+/* ...existing code... */
+
+/* Improved Category Selection Styles */
+.form-group[id$="-group"] {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.form-group[id$="-group"].deselected {
+    background-color: #f3f4f6;
+    opacity: 0.7;
+    filter: grayscale(30%);
+    border-color: #d1d5db;
+    box-shadow: none;
+    pointer-events: none; /* Disable all interactions */
+}
+
+.form-group[id$="-group"].deselected .toggle-switch {
+    pointer-events: auto; /* Enable interactions for the toggle switch */
+}
+
+/* Checkbox Container */
+.form-group label:first-of-type {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 1rem;
+}
+
+.form-group label:first-of-type:hover {
+    background-color: #f8fafc;
+}
+
+/* Custom Checkbox Design */
+.form-group input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid #cbd5e1;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.form-group input[type="checkbox"]:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-group input[type="checkbox"]:checked::after {
+    content: "✓";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+/* Additional Fields Animation */
+.additional-fields {
+    transition: all 0.3s ease;
+    overflow: hidden;
+    max-height: 1000px;
+}
+
+.form-group[id$="-group"].deselected .additional-fields {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* Dynamic Inputs Styling in Deselected State */
+.form-group[id$="-group"].deselected .dynamic-inputs {
+    pointer-events: none;
+}
+
+.form-group[id$="-group"].deselected .add-input-btn {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Category Title Enhancement */
+.form-group label:first-of-type span {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+/* Hover Effects */
+.form-group[id$="-group"]:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-group[id$="-group"].deselected:hover {
+    border-color: #9ca3af;
+}
+
+/* Add a visual indicator for deselected state */
+.form-group[id$="-group"].deselected::before {
+    content: "Category Disabled";
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    background-color: #e5e7eb;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    opacity: 0.8;
+}
+
+/* Category Toggle Switch Styles */
+.category-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.category-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    margin-right: 1rem; /* Add margin to separate the title from the toggle switch */
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    vertical-align: middle; /* Ensure vertical alignment */
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--primary-color);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+    box-shadow: 0 0 1px var(--primary-color);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+/* Update deselected state styles */
+.form-group[id$="-group"].deselected .toggle-slider {
+    background-color: #e5e7eb;
+}
+
+.form-group[id$="-group"].deselected {
+    background-color: #f3f4f6;
+    opacity: 0.7;
+    filter: grayscale(30%);
+    border-color: #d1d5db;
+    box-shadow: none;
+    pointer-events: none; /* Disable all interactions */
+}
+
+.form-group[id$="-group"].deselected .toggle-switch {
+    pointer-events: auto; /* Enable interactions for the toggle switch */
+}
+
+/* Remove the old checkbox styles */
+.form-group input[type="checkbox"] {
+    display: none;
+}
+
+/* ...existing code... */
