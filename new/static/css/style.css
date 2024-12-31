@@ -1199,3 +1199,43 @@ input:checked + .slider:before {
 .form-group input[type="checkbox"] {
     display: none;
 }
+
+/* ...existing code... */
+
+.hr-messages-container {
+    max-width: 48rem;
+    margin: 0 auto;
+}
+
+.hr-message-form {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.previous-messages {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.message-card {
+    background-color: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.message-card p {
+    margin-bottom: 0.5rem;
+    color: #334155;
+}
+
+.message-date {
+    font-size: 0.875rem;
+    color: #6b7280;
+}

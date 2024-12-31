@@ -633,6 +633,51 @@ def my_submissions():
         submission['created_at'] = submission['created_at'].strftime('%B %d, %Y, %I:%M:%S %p')
     return render_template('my_submissions.html', submissions=submissions)
 
+@app.route('/hr-messages')
+@login_required
+def hr_messages():
+    if session.get('role') != 'hr':
+        return redirect('/forms')
+    employees = list(db.employees.find())
+    categories = db.hr_messages.distinct('category')
+    return render_template('hr_messages.html', employees=employees, categories=categories)
+
+@app.route('/api/save-message', methods=['POST'])
+@login_required
+def save_message():
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    recipient = request.form['recipient']
+    category = request.form.get('category')
+    message = request.form['message']
+    timestamp = datetime.now()
+
+    if recipient == 'other' and not category:
+        return jsonify({'error': 'Category is required for "Other"'}), 400
+
+    message_data = {
+        'employee_id': recipient if not recipient.startswith('category_') else None,
+        'category': category if recipient == 'other' else recipient.split('category_')[1] if recipient.startswith('category_') else None,
+        'message': message,
+        'created_at': timestamp
+    }
+    db.hr_messages.insert_one(message_data)
+    return jsonify({'success': True})
+
+@app.route('/api/get-messages/<recipient_id>', methods=['GET'])
+@login_required
+def get_messages(recipient_id):
+    if session.get('role') != 'hr':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    query = {'employee_id': recipient_id} if not recipient_id.startswith('category_') else {'category': recipient_id.split('category_')[1]}
+    messages = list(db.hr_messages.find(query))
+    for message in messages:
+        message['_id'] = str(message['_id'])
+        message['created_at'] = message['created_at'].isoformat()
+    return jsonify({'messages': messages})
+
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
         db.form_status.insert_one({'id': 1, 'enabled': False})
