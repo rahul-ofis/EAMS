@@ -1309,3 +1309,29 @@ input:checked + .slider:before {
 }
 
 /* ...existing code... */
+
+/* ...existing code... */
+
+.dropdown {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    background-color: white;
+    color: var(--text-color);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="none" stroke="currentColor" stroke-width=".5" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 0.65rem auto;
+}
+
+.dropdown:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+/* ...existing code... */

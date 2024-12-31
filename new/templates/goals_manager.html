@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Employee Goals Management</h2>
+<div class="manager-goals-container">
+    <div class="employee-selector">
+        <label for="employee">Select Employee:</label>
+        <select id="employee" name="employee" class="dropdown">
+            <option value="">Select an employee</option>
+            {% for employee in employees %}
+            <option value="{{ employee._id }}">{{ employee.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="goals-section" style="display: none;">
+        <div class="year-selector">
+            <label for="year">Select Year:</label>
+            <select id="year" name="year" class="dropdown">
+            </select>
+        </div>
+
+        <div id="goals-table-container">
+            <table class="goals-table">
+                <thead>
+                    <tr>
+                        <th>Goal Description</th>
+                        <th>Employee Rating (out of 10)</th>
+                        <th>Employee Comments</th>
+                        <th>Manager Rating (out of 10)</th>
+                        <th>Manager Comments</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="goals-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const employeeSelector = document.getElementById('employee');
+    const yearSelector = document.getElementById('year');
+    const goalsSection = document.getElementById('goals-section');
+    const goalsTableBody = document.getElementById('goals-tbody');
+
+    employeeSelector.addEventListener('change', async function() {
+        const employeeId = this.value;
+        if (!employeeId) {
+            goalsSection.style.display = 'none';
+            return;
+        }
+
+        // Fetch employee goals years
+        const response = await fetch(`/api/employee_goals_years/${employeeId}`);
+        const years = await response.json();
+        
+        // Update year selector
+        yearSelector.innerHTML = years.map(year => 
+            `<option value="${year}">${year}</option>`
+        ).join('');
+
+        goalsSection.style.display = 'block';
+        await loadEmployeeGoals(employeeId, years[0]);
+    });
+
+    yearSelector.addEventListener('change', function() {
+        loadEmployeeGoals(employeeSelector.value, this.value);
+    });
+
+    async function loadEmployeeGoals(employeeId, year) {
+        const response = await fetch(`/api/employee_goals/${employeeId}/${year}`);
+        const goals = await response.json();
+        
+        goalsTableBody.innerHTML = goals.map(goal => `
+            <tr>
+                <td>${goal.description}</td>
+                <td>${goal.weightage}</td>
+                <td>${goal.employee_comments}</td>
+                <td>
+                    <input type="number" 
+                           min="0" 
+                           max="10" 
+                           value="${goal.manager_rating || ''}" 
+                           class="rating-input" 
+                           data-goal-id="${goal._id}">
+                </td>
+                <td>
+                    <textarea class="comments-input" 
+                              data-goal-id="${goal._id}">${goal.manager_comments || ''}</textarea>
+                </td>
+                <td>
+                    <button class="btn-primary save-rating" 
+                            data-goal-id="${goal._id}">Save</button>
+                </td>
+            </tr>
+        `).join('');
+
+        // Add event listeners for save buttons
+        document.querySelectorAll('.save-rating').forEach(button => {
+            button.addEventListener('click', async function() {
+                const goalId = this.dataset.goalId;
+                const rating = document.querySelector(`input[data-goal-id="${goalId}"]`).value;
+                const comments = document.querySelector(`textarea[data-goal-id="${goalId}"]`).value;
+                
+                if (rating === '' || rating < 0 || rating > 10) {
+                    alert('Please enter a valid rating between 0 and 10');
+                    return;
+                }
+
+                const response = await fetch(`/api/save_goal_feedback/${goalId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ rating: parseInt(rating), comments: comments })
+                });
+
+                if (response.ok) {
+                    alert('Feedback saved successfully');
+                } else {
+                    alert('Failed to save feedback');
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

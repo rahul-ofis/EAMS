@@ -648,6 +648,99 @@ def my_submissions():
         submission['created_at'] = submission['created_at'].strftime('%B %d, %Y, %I:%M:%S %p')
     return render_template('my_submissions.html', submissions=submissions)
 
+@app.route('/goals_manager')
+@login_required
+def goals_manager():
+    if session.get('role') != 'manager':
+        return redirect('/forms')
+    
+    # Get team members
+    team = db.teams.find_one({'manager_id': session['employee_id']})
+    if not team:
+        return render_template('goals_manager.html', employees=[])
+    
+    employees = list(db.employees.find({'_id': {'$in': [ObjectId(id) for id in team['member_ids']]}}))
+    for employee in employees:
+        employee['_id'] = str(employee['_id'])
+    
+    return render_template('goals_manager.html', employees=employees)
+
+@app.route('/api/employee_goals_years/<employee_id>')
+@login_required
+def get_employee_goals_years(employee_id):
+    if session.get('role') != 'manager':
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    # Verify employee belongs to manager's team
+    team = db.teams.find_one({'manager_id': session['employee_id']})
+    if not team or employee_id not in team['member_ids']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    years = set()
+    goals = db.goals.find({'employee_id': employee_id})
+    for goal in goals:
+        years.add(goal['created_at'])
+    
+    return jsonify(sorted(list(years), reverse=True))
+
+@app.route('/api/employee_goals/<employee_id>/<int:year>')
+@login_required
+def get_employee_goals(employee_id, year):
+    if session.get('role') != 'manager':
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    # Verify employee belongs to manager's team
+    team = db.teams.find_one({'manager_id': session['employee_id']})
+    if not team or employee_id not in team['member_ids']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    goals = list(db.goals.find({
+        'employee_id': employee_id,
+        'created_at': year
+    }))
+    
+    for goal in goals:
+        goal['_id'] = str(goal['_id'])
+    
+    return jsonify(goals)
+
+@app.route('/api/save_goal_feedback/<goal_id>', methods=['POST'])
+@login_required
+def save_goal_feedback(goal_id):
+    if session.get('role') != 'manager':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.json
+    rating = data.get('rating')
+    comments = data.get('comments')
+    
+    if not isinstance(rating, int) or rating < 0 or rating > 10:
+        return jsonify({'error': 'Invalid rating'}), 400
+    
+    goal = db.goals.find_one({'_id': ObjectId(goal_id)})
+    if not goal:
+        return jsonify({'error': 'Goal not found'}), 404
+        
+    # Verify employee belongs to manager's team
+    team = db.teams.find_one({'manager_id': session['employee_id']})
+    if not team or goal['employee_id'] not in team['member_ids']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db.goals.update_one(
+        {'_id': ObjectId(goal_id)},
+        {'$set': {'manager_rating': rating, 'manager_comments': comments}}
+    )
+    
+    # Add notification for the employee
+    notification = {
+        'employee_id': goal['employee_id'],
+        'message': 'Your manager has provided feedback on your goal.',
+        'created_at': datetime.now()
+    }
+    db.notifications.insert_one(notification)
+    
+    return jsonify({'success': True})
+
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
         db.form_status.insert_one({'id': 1, 'enabled': False})
