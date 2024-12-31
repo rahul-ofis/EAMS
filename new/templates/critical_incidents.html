@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="notes-container">
+<div class="critical-incidents-container">
     <h2>My Critical Incidents</h2>
 
-    <form id="note-form" class="note-form">
+    <form id="critical-incident-form" class="critical-incident-form">
         <div class="form-group">
             <label for="category">Category</label>
             <select id="category" name="category" required>
@@ -21,13 +21,13 @@
         <button type="submit">Save</button>
     </form>
 
-    <div id="notes-list" class="notes-list">
-        {% for note in notes %}
-        <div class="note-card">
-            <div class="note-category">{{ note.category }}</div>
-            <div class="note-message">{{ note.message }}</div>
-            <div class="note-timestamp">
-                {{ note.created_at.strftime('%B %d, %Y, %I:%M:%S %p') }}
+    <div id="critical-incidents-list" class="critical-incidents-list">
+        {% for critical_incident in critical_incidents %}
+        <div class="critical-incident-card">
+            <div class="critical-incident-category">{{ critical_incident.category }}</div>
+            <div class="critical-incident-message">{{ critical_incident.message }}</div>
+            <div class="critical-incident-timestamp">
+                {{ critical_incident.created_at.strftime('%B %d, %Y, %I:%M:%S %p') }}
             </div>
         </div>
         {% endfor %}
@@ -37,13 +37,13 @@
 
 {% block scripts %}
 <script>
-document.getElementById('note-form').addEventListener('submit', async (e) => {
+document.getElementById('critical-incident-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const category = document.getElementById('category').value;
     const message = document.getElementById('message').value;
 
     try {
-        const response = await fetch('/api/notes', {
+        const response = await fetch('/api/critical-incidents', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

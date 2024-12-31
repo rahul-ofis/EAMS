@@ -116,13 +116,13 @@ button:hover {
     text-decoration: none;
 }
 
-/* Notes page */
-.notes-container {
+/* Critical Incidents page */
+.critical-incidents-container {
     max-width: 48rem;
     margin: 0 auto;
 }
 
-.note-form {
+.critical-incident-form {
     background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 0.5rem;
@@ -130,19 +130,19 @@ button:hover {
     margin-bottom: 2rem;
 }
 
-.notes-list {
+.critical-incidents-list {
     display: grid;
     gap: 1rem;
 }
 
-.note-card {
+.critical-incident-card {
     background-color: var(--card-bg);
     padding: 1rem;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.note-category {
+.critical-incident-category {
     font-weight: 500;
     color: var(--primary-color);
     margin-bottom: 0.5rem;
@@ -254,7 +254,7 @@ button:hover {
 
 /* Add these styles to your existing CSS file */
 
-.existing-notes {
+.existing-critical-incidents {
     margin-bottom: 1rem;
     padding: 1rem;
     background-color: #f8fafc;
@@ -262,14 +262,14 @@ button:hover {
     border: 1px solid #e2e8f0;
 }
 
-.existing-notes h4 {
+.existing-critical-incidents h4 {
     font-size: 0.875rem;
     font-weight: 500;
     color: #64748b;
     margin-bottom: 0.5rem;
 }
 
-.note-reference {
+.critical-incident-reference {
     padding: 0.75rem;
     background-color: white;
     border-radius: 0.25rem;
@@ -277,12 +277,12 @@ button:hover {
     border: 1px solid #e2e8f0;
 }
 
-.note-reference p {
+.critical-incident-reference p {
     margin-bottom: 0.5rem;
     color: #334155;
 }
 
-.use-note-btn {
+.use-critical-incident-btn {
     width: auto;
     padding: 0.25rem 0.75rem;
     font-size: 0.75rem;
@@ -290,7 +290,7 @@ button:hover {
     color: #475569;
 }
 
-.use-note-btn:hover {
+.use-critical-incident-btn:hover {
     background-color: #cbd5e1;
 }
 

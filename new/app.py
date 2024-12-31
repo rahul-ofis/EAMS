@@ -10,7 +10,7 @@ app.secret_key = os.urandom(24)
 
 # MongoDB connection
 client = MongoClient('mongodb://localhost:27017/')
-db = client['notes_db']
+db = client['EmployeeManagement']
 
 def login_required(f):
     @wraps(f)
@@ -62,26 +62,26 @@ def signin():
 
 @app.route('/critical-incidents')
 @login_required
-def notes():
+def critical_incidents():
     if session.get('role') == 'hr':
         return redirect('/forms')
-    employee_notes = list(db.notes.find({'employee_id': session['employee_id']}))
-    return render_template('notes.html', notes=employee_notes)
+    employee_critical_incidents = list(db.critical_incidents.find({'employee_id': session['employee_id']}))
+    return render_template('critical_incidents.html', critical_incidents=employee_critical_incidents)
 
-@app.route('/api/notes', methods=['POST'])
+@app.route('/api/critical-incidents', methods=['POST'])
 @login_required
-def save_note():
+def save_critical_incident():
     category = request.json['category']
     message = request.json['message']
     timestamp = datetime.now()
 
-    note = {
+    critical_incident = {
         'employee_id': session['employee_id'],
         'category': category,
         'message': message,
         'created_at': timestamp
     }
-    db.notes.insert_one(note)
+    db.critical_incidents.insert_one(critical_incident)
     return jsonify({'success': True})
 
 @app.route('/api/toggle-form', methods=['POST'])
@@ -140,17 +140,17 @@ def forms():
         if not form_status['enabled']:
             return render_template('forms.html', form_enabled=False)
 
-        employee_notes = {}
-        notes = db.notes.find({'employee_id': session['employee_id']})
-        for note in notes:
-            category = note['category']
-            if category not in employee_notes:
-                employee_notes[category] = []
-            employee_notes[category].append({
-                'message': note['message']
+        employee_critical_incidents = {}
+        critical_incidents = db.critical_incidents.find({'employee_id': session['employee_id']})
+        for critical_incident in critical_incidents:
+            category = critical_incident['category']
+            if category not in employee_critical_incidents:
+                employee_critical_incidents[category] = []
+            employee_critical_incidents[category].append({
+                'message': critical_incident['message']
             })
 
-        return render_template('forms.html', form_enabled=True, notes=employee_notes)
+        return render_template('forms.html', form_enabled=True, critical_incidents=employee_critical_incidents)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -162,7 +162,7 @@ def submit_form():
 
     data = request.json
     form_data = data.get('formData', {})
-    new_notes = data.get('newNotes', [])
+    new_critical_incidents = data.get('newCriticalIncidents', [])
 
     if not form_data:
         return jsonify({'error': 'At least one field must be filled'}), 400
@@ -177,17 +177,17 @@ def submit_form():
     }
     db.form_submissions.insert_one(submission)
 
-    # Save new notes, avoiding duplicates
-    for note in new_notes:
-        existing_note = db.notes.find_one({
+    # Save new critical incidents, avoiding duplicates
+    for critical_incident in new_critical_incidents:
+        existing_critical_incident = db.critical_incidents.find_one({
             'employee_id': session['employee_id'],
-            'category': note['category'],
-            'message': note['message']
+            'category': critical_incident['category'],
+            'message': critical_incident['message']
         })
-        if not existing_note:
-            note['employee_id'] = session['employee_id']
-            note['created_at'] = timestamp
-            db.notes.insert_one(note)
+        if not existing_critical_incident:
+            critical_incident['employee_id'] = session['employee_id']
+            critical_incident['created_at'] = timestamp
+            db.critical_incidents.insert_one(critical_incident)
 
     # Create notification for the employee
     notification = {
@@ -228,10 +228,10 @@ def create_team():
         'member_ids': member_ids
     }
     db.teams.insert_one(team)
-    
+
     # Update the employee's role to 'manager'
     db.employees.update_one({'_id': ObjectId(manager_id)}, {'$set': {'role': 'manager'}})
-    
+
     # Add notifications for manager and members
     notification_manager = {
         'employee_id': manager_id,
@@ -415,16 +415,16 @@ def get_notifications():
         {'employee_id': session['employee_id']},
         {'_id': 1, 'message': 1, 'created_at': 1, 'read': 1}
     ).sort('created_at', -1))
-    
+
     # Count unread notifications
     unread_count = sum(1 for notification in notifications if not notification.get('read', False))
-    
+
     # Format the datetime objects to ISO strings and convert ObjectId to string
     for notification in notifications:
         notification['_id'] = str(notification['_id'])
         notification['created_at'] = notification['created_at'].isoformat()
         notification['read'] = notification.get('read', False)
-        
+
     return jsonify({
         'notifications': notifications,
         'unread_count': unread_count
@@ -541,7 +541,7 @@ def goals():
 def save_goal():
     data = request.json
     goal = {
-        'employee_id': session['epmloyee_id'],
+        'employee_id': session['employee_id'],
         'description': data['description'],
         'weightage': data['weightage'],
         'time_period': data['time_period'],
@@ -555,14 +555,14 @@ def save_goal():
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
         db.form_status.insert_one({'id': 1, 'enabled': False})
-    
+
     # Add default HR employee if not exists
     if not db.employees.find_one({'email': 'hr@gmail.com'}):
         db.employees.insert_one({
             'name': 'HR',
             'email': 'hr@gmail.com',
-            'password': '1234',  
+            'password': '1234',
             'role': 'hr'
         })
-    
+
     app.run(debug=True)

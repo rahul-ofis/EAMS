@@ -3,7 +3,7 @@
 {% block content %}
 <div class="forms-container">
     <h2>Submit Form</h2>
-    
+
     {% if not form_enabled %}
     <div class="form-disabled-message">
         <p>The form is currently disabled by HR.</p>
@@ -13,18 +13,18 @@
         {% for category in ['Work', 'Personal', 'Ideas', 'Tasks'] %}
         <div class="form-group">
             <label for="{{ category }}-inputs">{{ category }}</label>
-            
-            {% if notes and notes.get(category) %}
-            <div class="existing-notes">
+
+            {% if critical_incidents and critical_incidents.get(category) %}
+            <div class="existing-critical-incidents">
                 <h4>Your existing critical incidents:</h4>
-                {% for note in notes[category] %}
-                <div class="note-reference">
-                    <p>{{ note.message }}</p>
-                    <button 
-                        type="button" 
-                        class="use-note-btn" 
-                        data-category="{{ category }}" 
-                        data-message="{{ note.message }}"
+                {% for critical_incident in critical_incidents[category] %}
+                <div class="critical-incident-reference">
+                    <p>{{ critical_incident.message }}</p>
+                    <button
+                        type="button"
+                        class="use-critical-incident-btn"
+                        data-category="{{ category }}"
+                        data-message="{{ critical_incident.message }}"
                     >
                         Use this critical incident
                     </button>
@@ -43,17 +43,17 @@
                     <button type="button" class="remove-input-btn" style="display: none;">Remove</button>
                 </div>
             </div>
-            
-            <button 
-                type="button" 
-                class="add-input-btn" 
+
+            <button
+                type="button"
+                class="add-input-btn"
                 data-category="{{ category }}"
             >
                 Add another {{ category | lower }} critical incident
             </button>
         </div>
         {% endfor %}
-        
+
         <button type="submit" class="submit-btn">Submit Form</button>
     </form>
     {% endif %}
@@ -64,12 +64,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Remove the unused formData initialization
-    
+
     function addInputField(category, value = '') {
         const container = document.getElementById(`${category}-inputs`);
         const inputGroup = document.createElement('div');
         inputGroup.className = 'input-group';
-        
+
         inputGroup.innerHTML = `
             <textarea
                 class="form-input"
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
             >${value}</textarea>
             <button type="button" class="remove-input-btn">Remove</button>
         `;
-        
+
         container.appendChild(inputGroup);
         updateRemoveButtons(category);
     }
@@ -109,9 +109,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Use note button handler
+    // Use critical incident button handler
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('use-note-btn')) {
+        if (e.target.classList.contains('use-critical-incident-btn')) {
             const category = e.target.dataset.category;
             const message = e.target.dataset.message;
             addInputField(category, message);
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = {};  // Move formData declaration inside the submit handler
-            const uniqueNotes = new Map(); // Use Map to track unique category-message combinations
+            const uniqueCriticalIncidents = new Map(); // Use Map to track unique category-message combinations
 
             // Gather all inputs for each category
             ['Work', 'Personal', 'Ideas', 'Tasks'].forEach(category => {
@@ -137,8 +137,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const uniqueValues = [];
                     values.forEach(message => {
                         const key = `${category}-${message}`; // Create unique key
-                        if (!uniqueNotes.has(key)) {
-                            uniqueNotes.set(key, { category, message });
+                        if (!uniqueCriticalIncidents.has(key)) {
+                            uniqueCriticalIncidents.set(key, { category, message });
                             uniqueValues.push(message);
                         }
                     });
@@ -152,9 +152,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        formData, 
-                        newNotes: Array.from(uniqueNotes.values()) 
+                    body: JSON.stringify({
+                        formData,
+                        newCriticalIncidents: Array.from(uniqueCriticalIncidents.values())
                     })
                 });
 
