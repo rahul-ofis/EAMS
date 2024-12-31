@@ -527,24 +527,39 @@ def all_submissions():
 @app.route('/goals')
 @login_required
 def goals():
-    if session.get('role') == 'admin':
-        return redirect('/all-submissions')
+    if session.get('role') != 'employee':
+        return redirect('/forms')
+    
     user_id = session['employee_id']
     user_goals = list(db.goals.find({'employee_id': user_id}))
-    return render_template('goals.html', goals=user_goals)
+    
+    grouped_goals = {}
+    years = set()
+    current_year = datetime.now().year
+
+    for goal in user_goals:
+        year = goal['created_at']
+        years.add(year)
+        if year not in grouped_goals:
+            grouped_goals[year] = []
+        grouped_goals[year].append(goal)
+
+    return render_template('goals.html', grouped_goals=grouped_goals, current_year=current_year, years=sorted(years))
 
 @app.route('/api/goals', methods=['POST'])
 @login_required
 def save_goal():
+    if session.get('role') != 'employee':
+        return jsonify({'error': 'Unauthorized'}), 403
+
     data = request.json
     goal = {
         'employee_id': session['employee_id'],
         'description': data['description'],
         'weightage': data['weightage'],
-        'time_period': data['time_period'],
-        'ranking': data.get('ranking'),
-        'feedback': data.get('feedback'),
-        'created_at': datetime.now()
+        'employee_comments': data.get('employee_comments', ''),
+        'manager_comments': '',
+        'created_at': datetime.now().year
     }
     db.goals.insert_one(goal)
     return jsonify({'success': True})
@@ -645,5 +660,9 @@ if __name__ == '__main__':
             'password': '1234',
             'role': 'hr'
         })
+
+    # Ensure goals collection exists
+    if 'goals' not in db.list_collection_names():
+        db.create_collection('goals')
 
     app.run(debug=True)

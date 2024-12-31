@@ -3,48 +3,106 @@
 {% block content %}
 <h2>Employee Goals</h2>
 <div class="goals-container">
-    <form id="goal-form">
-        <div class="form-group">
-            <label for="description">Goal Description</label>
-            <input type="text" id="description" name="description" required>
-        </div>
-        <div class="form-group">
-            <label for="weightage">Goal Weightage</label>
-            <input type="number" id="weightage" name="weightage" required>
-        </div>
-        <div class="form-group">
-            <label for="time_period">Goal Time Period</label>
-            <select id="time_period" name="time_period" required>
-                <option value="current_year">Current Year</option>
-                <option value="previous_year">Previous Year</option>
-                <option value="next_year">Next Year</option>
-                <option value="quarterly">Quarterly</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="ranking">Employee Ranking</label>
-            <input type="number" id="ranking" name="ranking">
-        </div>
-        <div class="form-group">
-            <label for="feedback">Manager Feedback</label>
-            <textarea id="feedback" name="feedback"></textarea>
-        </div>
-        <button type="submit">Save Goal</button>
-    </form>
-    <div class="goals-list">
-        {% for goal in goals %}
-        <div class="goal-card">
-            <p><strong>Description:</strong> {{ goal.description }}</p>
-            <p><strong>Weightage:</strong> {{ goal.weightage }}</p>
-            <p><strong>Time Period:</strong> {{ goal.time_period }}</p>
-            {% if goal.ranking %}
-            <p><strong>Ranking:</strong> {{ goal.ranking }}</p>
-            {% endif %}
-            {% if goal.feedback %}
-            <p><strong>Feedback:</strong> {{ goal.feedback }}</p>
-            {% endif %}
-        </div>
-        {% endfor %}
+    <div class="year-selector">
+        <label for="year">Select Year:</label>
+        <select id="year" name="year">
+            {% for year in years %}
+            <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% for year, goals in grouped_goals.items() %}
+    <div class="year-goals" data-year="{{ year }}" {% if year != current_year %}style="display: none;"{% endif %}>
+        <h3>{{ year }}</h3>
+        <table class="goals-table">
+            <thead>
+                <tr>
+                    <th>Goal</th>
+                    <th>Weightage</th>
+                    <th>Employee Comments</th>
+                    <th>Manager Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for goal in goals %}
+                <tr>
+                    <td>{{ goal.description }}</td>
+                    <td>{{ goal.weightage }}</td>
+                    <td>{{ goal.employee_comments }}</td>
+                    <td>{{ goal.manager_comments }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="add-goal-container" id="add-goal-container" >
+    <button id="add-goal-button" class="btn-primary">Add New Goal</button>
+    <div class="add-goal-form" id="add-goal-form" style="display: none;">
+        <h3>Add New Goal for {{ current_year }}</h3>
+        <form id="goal-form">
+            <div class="form-group">
+                <label for="description">Goal Description</label>
+                <input type="text" id="description" name="description" required>
+            </div>
+            <div class="form-group">
+                <label for="weightage">Goal Weightage</label>
+                <input type="number" id="weightage" name="weightage" required>
+            </div>
+            <div class="form-group">
+                <label for="employee_comments">Employee Comments</label>
+                <textarea id="employee_comments" name="employee_comments"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Save Goal</button>
+            <button type="button" id="cancel-button" class="btn-secondary">Cancel</button>
+        </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const yearSelector = document.getElementById('year');
+    const yearGoals = document.querySelectorAll('.year-goals');
+    const addGoalForm = document.getElementById('add-goal-form');
+    const addGoalContainer = document.getElementById('add-goal-container'); 
+    const addGoalButton = document.getElementById('add-goal-button');
+    const cancelButton = document.getElementById('cancel-button');
+    const currentYear = "{{ current_year }}";
+
+    yearSelector.addEventListener('change', function() {
+        const selectedYear = parseInt(this.value);
+        yearGoals.forEach(function(yearGoal) {
+            if (parseInt(yearGoal.getAttribute('data-year')) === selectedYear) {
+                yearGoal.style.display = 'block';
+            } else {
+                yearGoal.style.display = 'none';
+            }
+        });
+        if (selectedYear == currentYear) {
+            addGoalContainer.style.display = 'block';
+            addGoalButton.style.display = 'block';
+        } else {
+            addGoalContainer.style.display = 'none';
+            addGoalButton.style.display = 'none';
+            addGoalForm.style.display = 'none';
+        }
+    });
+
+    addGoalButton.addEventListener('click', function() {
+        addGoalForm.style.display = 'block';
+        addGoalButton.style.display = 'none';
+    });
+
+    cancelButton.addEventListener('click', function() {
+        addGoalForm.style.display = 'none';
+        addGoalButton.style.display = 'block';
+    });
+
+});
+</script>
 {% endblock %}

@@ -72,9 +72,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = {
                 description: formData.get('description'),
                 weightage: formData.get('weightage'),
-                time_period: formData.get('time_period'),
-                ranking: formData.get('ranking'),
-                feedback: formData.get('feedback')
+                employee_comments: formData.get('employee_comments'),
+                created_at: new Date().getFullYear()
             };
             fetch('/api/goals', {
                 method: 'POST',
