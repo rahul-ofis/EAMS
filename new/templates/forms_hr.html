@@ -209,34 +209,39 @@ document.addEventListener('DOMContentLoaded', function() {
             startDictation(targetId, this);
         });
     });
-});
 
-function startDictation(fieldId, micIcon) {
-    if (window.hasOwnProperty('webkitSpeechRecognition')) {
-        const recognition = new webkitSpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        
-        micIcon.classList.add('mic-active');
-        recognition.start();
+    function startDictation(fieldId, micIcon) {
+        if (window.hasOwnProperty('webkitSpeechRecognition')) {
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            
+            micIcon.classList.add('mic-active');
+            recognition.start();
 
-        recognition.onresult = function(e) {
-            const field = document.getElementById(fieldId);
-            field.value += ' ' + e.results[0][0].transcript;
-            micIcon.classList.remove('mic-active');
-            recognition.stop();
-        };
+            recognition.onresult = function(e) {
+                const field = document.getElementById(fieldId);
+                field.value = '';
+                for (let i = 0; i < e.results.length; i++) {
+                    field.value += e.results[i][0].transcript;
+                }
+                if (e.results[0].isFinal) {
+                    micIcon.classList.remove('mic-active');
+                    recognition.stop();
+                }
+            };
 
-        recognition.onerror = function(e) {
-            micIcon.classList.remove('mic-active');
-            recognition.stop();
-        };
+            recognition.onerror = function(e) {
+                micIcon.classList.remove('mic-active');
+                recognition.stop();
+            };
 
-        recognition.onend = function() {
-            micIcon.classList.remove('mic-active');
-        };
+            recognition.onend = function() {
+                micIcon.classList.remove('mic-active');
+            };
+        }
     }
-}
+});
 </script>
 {% endblock %}
