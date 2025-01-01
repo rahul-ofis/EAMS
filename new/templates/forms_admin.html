@@ -4,7 +4,7 @@
 <div class="forms-container">
     <div class="view-controls">
         <h2>All Employee Submissions</h2>
-        <div class="toggle-switch">
+        <div class="toggle-switch" style="width: 75px;">
             <label class="switch">
                 <input type="checkbox" id="viewToggle">
                 <span class="slider round"></span>
@@ -130,16 +130,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const viewLabel = document.getElementById('viewLabel');
     const tableView = document.getElementById('tableView');
     const cardView = document.getElementById('cardView');
+    const formsContainer = document.querySelector('.forms-container');
 
     viewToggle.addEventListener('change', function() {
         if (this.checked) {
             tableView.style.display = 'block';
             cardView.style.display = 'none';
             viewLabel.textContent = 'Table View';
+            formsContainer.classList.add('table-view-active');
         } else {
             tableView.style.display = 'none';
             cardView.style.display = 'block';
             viewLabel.textContent = 'Card View';
+            formsContainer.classList.remove('table-view-active');
+        }
+    });
+});
+document.addEventListener('DOMContentLoaded', function() {
+    // Add to the DOMContentLoaded event listener:
+
+    const formsContainer = document.querySelector('.forms-container');
+    viewToggle.addEventListener('change', function() {
+        if (this.checked) {
+            tableView.style.display = 'block';
+            cardView.style.display = 'none';
+            viewLabel.textContent = 'Table View';
+            formsContainer.classList.add('table-view-active');
+        } else {
+            tableView.style.display = 'none';
+            cardView.style.display = 'block';
+            viewLabel.textContent = 'Card View';
+            formsContainer.classList.remove('table-view-active');
         }
     });
 });

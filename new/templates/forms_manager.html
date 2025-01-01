@@ -49,7 +49,16 @@ ul{
 </style>
 
 <div class="forms-container">
-    <h2>Team Submissions</h2>
+    <div class="forms-header">
+        <h2>Team Submissions</h2>
+        <div class="toggle-switch" style="width: 75px;">
+            <label class="switch">
+                <input type="checkbox" id="viewToggle">
+                <span class="slider round"></span>
+            </label>
+            <span id="viewLabel">Card View</span>
+        </div>
+    </div>
 
     {% if team_name %}
     <div class="team-info">
@@ -61,7 +70,72 @@ ul{
     </div>
     {% endif %}
 
-    <div class="submissions-list">
+    <!-- Table View -->
+    <div id="tableView" class="submissions-table-container" style="display: none;">
+        <table class="submissions-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Critical Incidents</th>
+                    <th>Measure of Success</th>
+                    <th>Percentage of Completion</th>
+                    <th>Comments on Achievement</th>
+                    <th>Self-Assessment Rating</th>
+                    <th>Reporting Manager Rating</th>
+                    <th>Reporting Manager Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for submission in submissions %}
+                {% for category, messages in submission.data.items() %}
+                {% if not category.endswith('-measure') and not category.endswith('-completion') and not category.endswith('-comments') and not category.endswith('-self-rating') and not category.endswith('-manager-rating') and not category.endswith('-manager-comments') %}
+                <tr>
+                    <td>{{ submission.employee_name }}</td>
+                    <td>{{ submission.created_at.strftime('%B %d, %Y, %I:%M:%S %p') }}</td>
+                    <td>{{ category }}</td>
+                    <td>
+                        <ul>
+                            {% for message in messages %}
+                            <li>{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                    <td>{{ submission.data[category + '-measure'] }}</td>
+                    <td>{{ submission.data[category + '-completion'] }}</td>
+                    <td>{{ submission.data[category + '-comments'] }}</td>
+                    <td>{{ submission.data[category + '-self-rating'] }}</td>
+                    <td>
+                        <select class="manager-rating" 
+                                data-category="{{ category }}"
+                                data-submission-id="{{ submission._id }}">
+                            <option value="">Select Rating</option>
+                            <option value="Excellent" {% if submission.data[category + '-manager-rating'] == 'Excellent' %}selected{% endif %}>Excellent</option>
+                            <option value="Very Good" {% if submission.data[category + '-manager-rating'] == 'Very Good' %}selected{% endif %}>Very Good</option>
+                            <option value="Good" {% if submission.data[category + '-manager-rating'] == 'Good' %}selected{% endif %}>Good</option>
+                            <option value="Needs Improvement" {% if submission.data[category + '-manager-rating'] == 'Needs Improvement' %}selected{% endif %}>Needs Improvement</option>
+                            <option value="Below Expectations" {% if submission.data[category + '-manager-rating'] == 'Below Expectations' %}selected{% endif %}>Below Expectations</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="input-container">
+                            <textarea class="manager-comments"
+                                    data-category="{{ category }}"
+                                    data-submission-id="{{ submission._id }}">{{ submission.data[category + '-manager-comments'] }}</textarea>
+                            <button type="button" class="mic-icon" data-target="{{ submission._id }}-{{ category }}-manager-comments"></button>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Card View -->
+    <div id="cardView" class="submissions-list">
         {% for submission in submissions %}
         <div class="submission-card" data-submission-id="{{ submission._id }}">
             <div class="submission-header">
@@ -180,6 +254,24 @@ document.addEventListener('DOMContentLoaded', function() {
             startDictation(targetId, this);
         });
     });
+
+    // Toggle between table and card view
+    const viewToggle = document.getElementById('viewToggle');
+    const tableView = document.getElementById('tableView');
+    const cardView = document.getElementById('cardView');
+    const viewLabel = document.getElementById('viewLabel');
+
+    viewToggle.addEventListener('change', function() {
+        if (this.checked) {
+            tableView.style.display = 'block';
+            cardView.style.display = 'none';
+            viewLabel.textContent = 'Table View';
+        } else {
+            tableView.style.display = 'none';
+            cardView.style.display = 'block';
+            viewLabel.textContent = 'Card View';
+        }
+    });
 });
 
 function startDictation(fieldId, micIcon) {
@@ -214,5 +306,24 @@ function startDictation(fieldId, micIcon) {
         };
     }
 }
+document.addEventListener('DOMContentLoaded', function() {
+    // Add to the DOMContentLoaded event listener:
+
+    const formsContainer = document.querySelector('.forms-container');
+    viewToggle.addEventListener('change', function() {
+        if (this.checked) {
+            tableView.style.display = 'block';
+            cardView.style.display = 'none';
+            viewLabel.textContent = 'Table View';
+            formsContainer.classList.add('table-view-active');
+        } else {
+            tableView.style.display = 'none';
+            cardView.style.display = 'block';
+            viewLabel.textContent = 'Card View';
+            formsContainer.classList.remove('table-view-active');
+        }
+    });
+});
+
 </script>
 {% endblock %}
