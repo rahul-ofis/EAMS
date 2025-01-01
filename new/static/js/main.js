@@ -106,17 +106,29 @@ function startDictation(fieldId, micIcon) {
     if (window.hasOwnProperty('webkitSpeechRecognition')) {
         const recognition = new webkitSpeechRecognition();
         recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.interimResults = true; // Enable interim results to display text as dictated
         recognition.lang = 'en-US';
         
         micIcon.classList.add('mic-active');
         recognition.start();
 
+        let finalTranscript = document.getElementById(fieldId).value; // Store the current value of the field
+        // Add space if there's existing text and it doesn't end with a space
+        if (finalTranscript && !finalTranscript.endsWith(' ')) {
+            finalTranscript += ' ';
+        }
+
         recognition.onresult = function(e) {
             const field = document.getElementById(fieldId);
-            field.value += ' ' + e.results[0][0].transcript;
-            micIcon.classList.remove('mic-active');
-            recognition.stop();
+            let interimTranscript = '';
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                if (e.results[i].isFinal) {
+                    finalTranscript += e.results[i][0].transcript;
+                } else {
+                    interimTranscript += e.results[i][0].transcript;
+                }
+            }
+            field.value = finalTranscript + interimTranscript;
         };
 
         recognition.onerror = function(e) {
