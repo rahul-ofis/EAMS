@@ -45,6 +45,18 @@
 ul{
     margin-left: 30px;
 }
+
+/* No submissions message styling */
+.no-submissions {
+    text-align: center;
+    padding: 2rem;
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    color: #64748b;
+    font-size: 1.1rem;
+    margin: 2rem 0;
+    border: 1px dashed #cbd5e1;
+}
 </style>
 <div class="forms-container">
     <button id="toggle-form" class="toggle-button">
@@ -59,6 +71,21 @@ ul{
             </label>
             <span id="viewLabel">Card View</span>
         </div>
+    </div>
+
+    <!-- Member selection dropdown -->
+    <div class="member-select-container">
+        <select id="memberSelect" class="member-select">
+            <option value="all">View All Members</option>
+            {% for employee in employees %}
+            <option value="{{ employee._id }}">{{ employee.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- No submissions message -->
+    <div id="noSubmissions" class="no-submissions" style="display: none;">
+        No submissions found for the selected member.
     </div>
 
     <!-- Table View -->
@@ -82,7 +109,7 @@ ul{
                 {% for submission in submissions %}
                 {% for category, messages in submission.data.items() %}
                 {% if not category.endswith('-measure') and not category.endswith('-completion') and not category.endswith('-comments') and not category.endswith('-self-rating') and not category.endswith('-manager-rating') and not category.endswith('-manager-comments') %}
-                <tr>
+                <tr data-employee-id="{{ submission.employee_id }}">
                     <td>{{ submission.employee_name }}</td>
                     <td>{{ submission.created_at.strftime('%B %d, %Y') }}</td>
                     <td>{{ category }}</td>
@@ -110,7 +137,7 @@ ul{
     <!-- Card View -->
     <div id="cardView" class="submissions-list">
         {% for submission in submissions %}
-        <div class="submission-card" data-submission-id="{{ submission._id }}">
+        <div class="submission-card" data-submission-id="{{ submission._id }}" data-employee-id="{{ submission.employee_id }}">
             <div class="submission-header">
                 Submitted by: {{ submission.employee_name }}
                 <span class="submission-date">
@@ -326,6 +353,43 @@ document.addEventListener('DOMContentLoaded', function() {
             viewLabel.textContent = 'Card View';
         }
     });
+
+    // Member selection filtering
+    const memberSelect = document.getElementById('memberSelect');
+    const noSubmissions = document.getElementById('noSubmissions');
+    
+    function filterSubmissions(memberId) {
+        const submissionRows = document.querySelectorAll('.submission-card, .submissions-table tbody tr');
+        let hasSubmissions = false;
+        
+        submissionRows.forEach(row => {
+            if (memberId === 'all' || row.getAttribute('data-employee-id') === memberId) {
+                row.style.display = '';
+                hasSubmissions = true;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        noSubmissions.style.display = hasSubmissions ? 'none' : 'block';
+        tableView.style.display = hasSubmissions ? tableView.getAttribute('data-display') || 'none' : 'none';
+        cardView.style.display = hasSubmissions ? cardView.getAttribute('data-display') || 'block' : 'none';
+    }
+    
+    memberSelect.addEventListener('change', function() {
+        filterSubmissions(this.value);
+    });
+    
+    // Store original display values when toggling views
+    viewToggle.addEventListener('change', function() {
+        const showTable = this.checked;
+        tableView.setAttribute('data-display', showTable ? 'block' : 'none');
+        cardView.setAttribute('data-display', showTable ? 'none' : 'block');
+        filterSubmissions(memberSelect.value); // Reapply current filter
+    });
+    
+    // Initial filter
+    filterSubmissions('all');
 });
 document.addEventListener('DOMContentLoaded', function() {
     // Add to the DOMContentLoaded event listener:

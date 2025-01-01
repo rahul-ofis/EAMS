@@ -158,7 +158,8 @@ def forms():
                 'message': critical_incident['message']
             })
 
-        return render_template('forms.html', form_enabled=True, critical_incidents=employee_critical_incidents, submission=submission)
+        employees = list(db.employees.find())
+        return render_template('forms.html', form_enabled=True, critical_incidents=employee_critical_incidents, submission=submission, employees=employees)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -393,14 +394,20 @@ def team_submissions():
     team = db.teams.find_one({'manager_id': session['employee_id']})
     if team:
         team_name = team['name']
-        member_ids = team['member_ids']
-        submissions = list(db.form_submissions.find({'employee_id': {'$in': member_ids}}))
+        member_ids = [ObjectId(id) for id in team['member_ids']]
+        team_members = list(db.employees.find({'_id': {'$in': member_ids}}))
+        
+        submissions = list(db.form_submissions.find({'employee_id': {'$in': [str(id) for id in member_ids]}}))
         for submission in submissions:
             employee = db.employees.find_one({'_id': ObjectId(submission['employee_id'])})
             submission['employee_name'] = employee['name'] if employee else 'Unknown'
-        return render_template('forms_manager.html', team_name=team_name, submissions=submissions)
+            
+        return render_template('forms_manager.html', 
+                             team_name=team_name, 
+                             submissions=submissions, 
+                             team_members=team_members)
     else:
-        return render_template('forms_manager.html', team_name=None, submissions=[])
+        return render_template('forms_manager.html', team_name=None, submissions=[], team_members=[])
 
 @app.route('/api/notifications')
 @login_required
@@ -518,11 +525,12 @@ def all_submissions():
         return redirect('/forms')
 
     submissions = list(db.form_submissions.find())
+    employees = list(db.employees.find())
     for submission in submissions:
         employee = db.employees.find_one({'_id': ObjectId(submission['employee_id'])})
         submission['employee_name'] = employee['name'] if employee else 'Unknown'
         submission['employee_role'] = employee['role'] if employee else 'Unknown'
-    return render_template('forms_admin.html', submissions=submissions)
+    return render_template('forms_admin.html', submissions=submissions, employees=employees)
 
 @app.route('/goals')
 @login_required

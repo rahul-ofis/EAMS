@@ -63,12 +63,25 @@ ul{
     {% if team_name %}
     <div class="team-info">
         <p>You are the manager of <strong>{{ team_name }}</strong> team.</p>
+        <div class="member-select-container">
+            <select id="memberSelect" class="member-select">
+                <option value="all">View All Members</option>
+                {% for member in team_members %}
+                <option value="{{ member._id }}">{{ member.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
     </div>
     {% else %}
     <div class="team-info">
         <p>You are not assigned to any team.</p>
     </div>
     {% endif %}
+
+    <!-- No submissions message -->
+    <div id="noSubmissions" class="no-submissions" style="display: none;">
+        No submissions found for the selected member.
+    </div>
 
     <!-- Table View -->
     <div id="tableView" class="submissions-table-container" style="display: none;">
@@ -91,7 +104,7 @@ ul{
                 {% for submission in submissions %}
                 {% for category, messages in submission.data.items() %}
                 {% if not category.endswith('-measure') and not category.endswith('-completion') and not category.endswith('-comments') and not category.endswith('-self-rating') and not category.endswith('-manager-rating') and not category.endswith('-manager-comments') %}
-                <tr>
+                <tr data-employee-id="{{ submission.employee_id }}">
                     <td>{{ submission.employee_name }}</td>
                     <td>{{ submission.created_at.strftime('%B %d, %Y, %I:%M:%S %p') }}</td>
                     <td>{{ category }}</td>
@@ -137,7 +150,7 @@ ul{
     <!-- Card View -->
     <div id="cardView" class="submissions-list">
         {% for submission in submissions %}
-        <div class="submission-card" data-submission-id="{{ submission._id }}">
+        <div class="submission-card" data-submission-id="{{ submission._id }}" data-employee-id="{{ submission.employee_id }}">
             <div class="submission-header">
                 Submitted by: {{ submission.employee_name }}
                 <span class="submission-date">
@@ -272,6 +285,43 @@ document.addEventListener('DOMContentLoaded', function() {
             viewLabel.textContent = 'Card View';
         }
     });
+
+    // Member selection filtering
+    const memberSelect = document.getElementById('memberSelect');
+    const noSubmissions = document.getElementById('noSubmissions');
+    
+    function filterSubmissions(memberId) {
+        const submissionRows = document.querySelectorAll('.submission-card, .submissions-table tbody tr');
+        let hasSubmissions = false;
+        
+        submissionRows.forEach(row => {
+            if (memberId === 'all' || row.getAttribute('data-employee-id') === memberId) {
+                row.style.display = '';
+                hasSubmissions = true;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        noSubmissions.style.display = hasSubmissions ? 'none' : 'block';
+        tableView.style.display = hasSubmissions ? tableView.getAttribute('data-display') || 'none' : 'none';
+        cardView.style.display = hasSubmissions ? cardView.getAttribute('data-display') || 'block' : 'none';
+    }
+    
+    memberSelect.addEventListener('change', function() {
+        filterSubmissions(this.value);
+    });
+    
+    // Store original display values when toggling views
+    viewToggle.addEventListener('change', function() {
+        const showTable = this.checked;
+        tableView.setAttribute('data-display', showTable ? 'block' : 'none');
+        cardView.setAttribute('data-display', showTable ? 'none' : 'block');
+        filterSubmissions(memberSelect.value); // Reapply current filter
+    });
+    
+    // Initial filter
+    filterSubmissions('all');
 });
 
 function startDictation(fieldId, micIcon) {

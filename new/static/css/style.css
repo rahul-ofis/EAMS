@@ -183,6 +183,7 @@ button:hover {
 .submission-card {
     background-color: var(--card-bg);
     padding: 1.5rem;
+    margin-bottom: 10px;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -1129,6 +1130,7 @@ input:checked + .slider:before {
     display: inline-block;
     width: 50px;
     height: 26px;
+    margin-right: 10px;
     vertical-align: middle; /* Ensure vertical alignment */
 }
 
@@ -1325,4 +1327,46 @@ input:checked + .slider:before {
 .forms-container.table-view-active {
     max-width: none;
     margin: 0;
+}
+/* Member selection dropdown styling */
+.member-select-container {
+    margin-bottom: 2rem;
+    width: 300px;
+}
+
+.member-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background-color: white;
+    font-size: 1rem;
+    color: #1f2937;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236B7280'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+}
+
+.member-select:hover {
+    border-color: #cbd5e1;
+}
+
+.member-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+.no-submissions {
+    text-align: center;
+    padding: 2rem;
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    color: #64748b;
+    font-size: 1.1rem;
+    margin: 2rem 0;
+    border: 1px dashed #cbd5e1;
 }
