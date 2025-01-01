@@ -92,3 +92,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+//Mic button
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.mic-icon').forEach(icon => {
+        icon.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            startDictation(targetId, this);
+        });
+    });
+});
+
+function startDictation(fieldId, micIcon) {
+    if (window.hasOwnProperty('webkitSpeechRecognition')) {
+        const recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        
+        micIcon.classList.add('mic-active');
+        recognition.start();
+
+        recognition.onresult = function(e) {
+            const field = document.getElementById(fieldId);
+            field.value += ' ' + e.results[0][0].transcript;
+            micIcon.classList.remove('mic-active');
+            recognition.stop();
+        };
+
+        recognition.onerror = function(e) {
+            micIcon.classList.remove('mic-active');
+            recognition.stop();
+        };
+
+        recognition.onend = function() {
+            micIcon.classList.remove('mic-active');
+        };
+    }
+}
