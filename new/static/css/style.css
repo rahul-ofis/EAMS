@@ -808,24 +808,6 @@ button[type="submit"]:hover {
 .employee-card button.delete-employee-btn:hover {
     background-color: #dc2626;
 }
-
-.goals-container {
-    max-width: 48rem;
-    margin: 0 auto;
-    padding: 2rem;
-    background-color: var(--card-bg);
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.goal-card {
-    background-color: var(--card-bg);
-    padding: 1rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1rem;
-}
-
 /* Submissions Table Styles */
 .submissions-table {
     width: 100%;
@@ -993,8 +975,6 @@ input:checked + .slider:before {
 .submissions-table td ul li {
     margin-bottom: 0.25rem;
 }
-
-/* ...existing code... */
 
 /* Improved Category Selection Styles */
 .form-group[id$="-group"] {

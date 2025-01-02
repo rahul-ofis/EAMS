@@ -532,33 +532,6 @@ def all_submissions():
         submission['employee_role'] = employee['role'] if employee else 'Unknown'
     return render_template('forms_admin.html', submissions=submissions, employees=employees)
 
-@app.route('/goals')
-@login_required
-def goals():
-    if session.get('role') == 'admin':
-        return redirect('/all-submissions')
-    if session.get('role') == 'hr':
-        return redirect('/forms')
-    user_id = session['employee_id']
-    user_goals = list(db.goals.find({'employee_id': user_id}))
-    return render_template('goals.html', goals=user_goals)
-
-@app.route('/api/goals', methods=['POST'])
-@login_required
-def save_goal():
-    data = request.json
-    goal = {
-        'employee_id': session['employee_id'],
-        'description': data['description'],
-        'weightage': data['weightage'],
-        'time_period': data['time_period'],
-        'ranking': data.get('ranking'),
-        'feedback': data.get('feedback'),
-        'created_at': datetime.now()
-    }
-    db.goals.insert_one(goal)
-    return jsonify({'success': True})
-
 @app.route('/api/update-feedback/<submission_id>', methods=['POST'])
 @login_required
 def update_feedback(submission_id):

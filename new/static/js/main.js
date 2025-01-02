@@ -63,35 +63,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle goal form submission
-    const goalForm = document.getElementById('goal-form');
-    if (goalForm) {
-        goalForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const formData = new FormData(goalForm);
-            const data = {
-                description: formData.get('description'),
-                weightage: formData.get('weightage'),
-                time_period: formData.get('time_period'),
-                ranking: formData.get('ranking'),
-                feedback: formData.get('feedback')
-            };
-            fetch('/api/goals', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    location.reload();
-                }
-            });
-        });
-    }
-
     // Mic button
     document.querySelectorAll('.mic-icon').forEach(icon => {
         icon.addEventListener('click', function() {
