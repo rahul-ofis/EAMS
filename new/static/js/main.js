@@ -91,13 +91,46 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-});
-//Mic button
-document.addEventListener('DOMContentLoaded', function() {
+
+    // Mic button
     document.querySelectorAll('.mic-icon').forEach(icon => {
         icon.addEventListener('click', function() {
             const targetId = this.dataset.target;
             startDictation(targetId, this);
+        });
+    });
+
+    // Save feedback button
+    document.querySelectorAll('.save-feedback-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const submissionId = this.dataset.submissionId;
+            const submissionRow = document.querySelector(`tr[data-submission-id="${submissionId}"]`) || document.querySelector(`.submission-card[data-submission-id="${submissionId}"]`);
+            const updates = {};
+
+            submissionRow.querySelectorAll('.hr-rating, .hr-comments').forEach(element => {
+                const category = element.dataset.category;
+                const field = element.classList.contains('hr-rating') ? 'manager-rating' : 'manager-comments';
+                const key = `${category}-${field}`;
+                updates[key] = element.value;
+            });
+
+            try {
+                const response = await fetch(`/api/submit-hr-feedback/${submissionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updates)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save feedback');
+                }
+
+                alert('Feedback saved successfully');
+            } catch (error) {
+                alert(error.message);
+            }
         });
     });
 });

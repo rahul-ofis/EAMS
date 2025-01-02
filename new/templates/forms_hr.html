@@ -90,6 +90,7 @@ ul{
 
     <!-- Table View -->
     <div id="tableView" class="submissions-table-container" style="display: none;">
+        {% if submissions %}
         <table class="submissions-table">
             <thead>
                 <tr>
@@ -103,13 +104,14 @@ ul{
                     <th>Self Rating</th>
                     <th>Manager/HR Rating</th>
                     <th>Manager/HR Comments</th>
+                    <th>Actions</th> <!-- Add Actions column -->
                 </tr>
             </thead>
             <tbody>
                 {% for submission in submissions %}
                 {% for category, messages in submission.data.items() %}
                 {% if not category.endswith('-measure') and not category.endswith('-completion') and not category.endswith('-comments') and not category.endswith('-self-rating') and not category.endswith('-manager-rating') and not category.endswith('-manager-comments') %}
-                <tr data-employee-id="{{ submission.employee_id }}">
+                <tr data-employee-id="{{ submission.employee_id }}" data-submission-id="{{ submission._id }}">
                     <td>{{ submission.employee_name }}</td>
                     <td>{{ submission.created_at.strftime('%B %d, %Y') }}</td>
                     <td>{{ category }}</td>
@@ -124,14 +126,40 @@ ul{
                     <td>{{ submission.data[category + '-completion'] }}</td>
                     <td>{{ submission.data[category + '-comments'] }}</td>
                     <td>{{ submission.data[category + '-self-rating'] }}</td>
-                    <td>{{ submission.data[category + '-manager-rating'] }}</td>
-                    <td>{{ submission.data[category + '-manager-comments'] }}</td>
+                    <td>
+                        <select class="hr-rating" data-category="{{ category }}" data-submission-id="{{ submission._id }}" {% if submission.employee_role != 'manager' %}disabled{% endif %}>
+                            <option value="">Select Rating</option>
+                            <option value="Excellent" {% if submission.data[category + '-manager-rating'] == 'Excellent' %}selected{% endif %}>Excellent</option>
+                            <option value="Very Good" {% if submission.data[category + '-manager-rating'] == 'Very Good' %}selected{% endif %}>Very Good</option>
+                            <option value="Good" {% if submission.data[category + '-manager-rating'] == 'Good' %}selected{% endif %}>Good</option>
+                            <option value="Needs Improvement" {% if submission.data[category + '-manager-rating'] == 'Needs Improvement' %}selected{% endif %}>Needs Improvement</option>
+                            <option value="Below Expectations" {% if submission.data[category + '-manager-rating'] == 'Below Expectations' %}selected{% endif %}>Below Expectations</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="input-container">
+                            <textarea id="{{ category }}-manager-comments-{{ submission._id }}"
+                                      class="hr-comments"
+                                      data-category="{{ category }}"
+                                      data-submission-id="{{ submission._id }}"
+                                      {% if submission.employee_role != 'manager' %}disabled{% endif %}>{{ submission.data[category + '-manager-comments'] }}</textarea>
+                            {% if submission.employee_role == 'manager' %}
+                            <button type="button" class="mic-icon" data-target="{{ category }}-manager-comments-{{ submission._id }}"></button>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if submission.employee_role == 'manager' %}
+                        <button class="save-feedback-btn" data-submission-id="{{ submission._id }}">Save HR Feedback</button>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endif %}
                 {% endfor %}
                 {% endfor %}
             </tbody>
         </table>
+        {% endif %}
     </div>
 
     <!-- Card View -->

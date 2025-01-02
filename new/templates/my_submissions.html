@@ -16,6 +16,7 @@
 
     <!-- Table View -->
     <div id="tableView" class="submissions-table-container" style="display: none;">
+        {% if submissions %}
         <table class="submissions-table">
             <thead>
                 <tr>
@@ -56,6 +57,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% endif %}
     </div>
 
     <!-- Card View -->

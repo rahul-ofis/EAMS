@@ -48,7 +48,7 @@
                 {% for submission in submissions %}
                 {% for category, messages in submission.data.items() %}
                 {% if not category.endswith('-measure') and not category.endswith('-completion') and not category.endswith('-comments') and not category.endswith('-self-rating') and not category.endswith('-manager-rating') and not category.endswith('-manager-comments') %}
-                <tr data-employee-id="{{ submission.employee_id }}">
+                <tr data-employee-id="{{ submission.employee_id }}" data-submission-id="{{ submission._id }}">
                     <td>{{ submission.employee_name }}</td>
                     <td>{{ submission.created_at.strftime('%B %d, %Y') }}</td>
                     <td>{{ category }}</td>

@@ -186,22 +186,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById(`${category}-inputs`);
         const inputGroup = document.createElement('div');
         inputGroup.className = 'input-group';
+        const uniqueId = `${category}-textarea-${Date.now()}`;
 
         inputGroup.innerHTML = `
             <div class="input-container">
                 <textarea
                     class="form-input"
-                    id="${category}-textarea"
+                    id="${uniqueId}"
                     name="${category}[]"
                     placeholder="Enter your ${category.toLowerCase()} critical incident"
                 >${value}</textarea>
-                <button type="button" class="mic-icon" data-target="${category}-textarea"></button>
+                <button type="button" class="mic-icon" data-target="${uniqueId}"></button>
             </div>
             <button type="button" class="remove-input-btn">Remove</button>
         `;
 
         container.appendChild(inputGroup);
         updateRemoveButtons(category);
+
+        // Attach mic button event listener
+        inputGroup.querySelector('.mic-icon').addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            startDictation(targetId, this);
+        });
     }
 
     function updateRemoveButtons(category) {
