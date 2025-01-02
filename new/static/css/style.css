@@ -1217,6 +1217,7 @@ input:checked + .slider:before {
 .previous-messages {
     background-color: var(--card-bg);
     padding: 1.5rem;
+}
 .goals-container {
     max-width: 48rem;
     margin: 0 auto;
