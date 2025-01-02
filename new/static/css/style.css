@@ -1217,6 +1217,11 @@ input:checked + .slider:before {
 .previous-messages {
     background-color: var(--card-bg);
     padding: 1.5rem;
+.goals-container {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: var(--card-bg);
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -1370,3 +1375,129 @@ input:checked + .slider:before {
     margin: 2rem 0;
     border: 1px dashed #cbd5e1;
 }
+.goals-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background-color: var(--card-bg);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.goals-table th,
+.goals-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.goals-table th {
+    background-color: #f8fafc;
+    font-weight: 500;
+    color: var(--text-color);
+    white-space: nowrap;
+}
+
+.goals-table td {
+    vertical-align: top;
+}
+
+.goals-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.goals-table ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.goals-table li {
+    margin-bottom: 0.25rem;
+}
+
+.goals-table li:last-child {
+    margin-bottom: 0;
+}
+
+/* Add horizontal scroll for small screens */
+.goals-container {
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.add-goal-container {
+    max-width: 48rem;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: var(--card-bg);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.add-goal-form {
+    margin-top: 1rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+    background-color: #e5e7eb;
+    color: #374151;
+    border: none;
+    width: 15%;
+    border-radius: 0.375rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #d1d5db;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.dropdown {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    background-color: white;
+    color: var(--text-color);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="none" stroke="currentColor" stroke-width=".5" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 0.65rem auto;
+}
+
+.dropdown:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+/* ...existing code... */

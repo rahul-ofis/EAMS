@@ -71,6 +71,8 @@
         {% endif %}
         {% if session.get('role') != 'hr' and session.get('role') != 'admin' %}
         <a href="/goals" class="sidebar-link">
+        {% if session.get('role') == 'manager' %}
+        <a href="/goals_manager" class="sidebar-link">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5zm0 7l10 5-10 5-10-5 10-5zm0 7l10 5-10 5-10-5 10-5z"></path>
             </svg>
@@ -87,6 +89,13 @@
                 <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
             Team Submissions
+        </a>
+        {% elif session.get('role') == 'employee' %}
+        <a href="/goals" class="sidebar-link">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zm0 7l10 5-10 5-10-5 10-5zm0 7l10 5-10 5-10-5 10-5z"></path>
+            </svg>
+            Goals
         </a>
         {% endif %}
         {% if session.get('role') == 'hr' %}
