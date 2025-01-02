@@ -69,8 +69,6 @@
             My Submissions
         </a>
         {% endif %}
-        {% if session.get('role') != 'hr' and session.get('role') != 'admin' %}
-        <a href="/goals" class="sidebar-link">
         {% if session.get('role') == 'manager' %}
         <a href="/goals_manager" class="sidebar-link">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
