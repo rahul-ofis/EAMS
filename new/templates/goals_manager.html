@@ -14,13 +14,13 @@
     </div>
 
     <div id="goals-section" style="display: none;">
-        <div class="year-selector">
+        <div class="year-selector" id="year-selector" style="display: none;">
             <label for="year">Select Year:</label>
             <select id="year" name="year" class="dropdown">
             </select>
         </div>
 
-        <div id="goals-table-container">
+        <div id="goals-table-container" class="table-responsive" style="display: none;">
             <table class="goals-table">
                 <thead>
                     <tr>
@@ -36,6 +36,7 @@
                 </tbody>
             </table>
         </div>
+        <div id="no-goals-message" class="no-goals-message" style="display: none;">No goals added.</div>
     </div>
 </div>
 {% endblock %}
@@ -45,8 +46,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     const employeeSelector = document.getElementById('employee');
     const yearSelector = document.getElementById('year');
+    const yearSelectorContainer = document.getElementById('year-selector');
     const goalsSection = document.getElementById('goals-section');
+    const goalsTableContainer = document.getElementById('goals-table-container');
     const goalsTableBody = document.getElementById('goals-tbody');
+    const noGoalsMessage = document.getElementById('no-goals-message');
 
     employeeSelector.addEventListener('change', async function() {
         const employeeId = this.value;
@@ -59,11 +63,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const response = await fetch(`/api/employee_goals_years/${employeeId}`);
         const years = await response.json();
         
+        if (years.length === 0) {
+            yearSelector.innerHTML = '';
+            goalsTableBody.innerHTML = '';
+            yearSelectorContainer.style.display = 'none';
+            goalsTableContainer.style.display = 'none';
+            noGoalsMessage.style.display = 'block';
+            goalsSection.style.display = 'block';
+            return;
+        }
+
         // Update year selector
         yearSelector.innerHTML = years.map(year => 
             `<option value="${year}">${year}</option>`
         ).join('');
 
+        yearSelectorContainer.style.display = 'block';
+        goalsTableContainer.style.display = 'block';
+        noGoalsMessage.style.display = 'none';
         goalsSection.style.display = 'block';
         await loadEmployeeGoals(employeeId, years[0]);
     });
@@ -76,29 +93,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const response = await fetch(`/api/employee_goals/${employeeId}/${year}`);
         const goals = await response.json();
         
-        goalsTableBody.innerHTML = goals.map(goal => `
-            <tr>
-                <td>${goal.description}</td>
-                <td>${goal.weightage}</td>
-                <td>${goal.employee_comments}</td>
-                <td>
-                    <input type="number" 
-                           min="0" 
-                           max="10" 
-                           value="${goal.manager_rating || ''}" 
-                           class="rating-input" 
-                           data-goal-id="${goal._id}">
-                </td>
-                <td>
-                    <textarea class="comments-input" 
-                              data-goal-id="${goal._id}">${goal.manager_comments || ''}</textarea>
-                </td>
-                <td>
-                    <button class="btn-primary save-rating" 
-                            data-goal-id="${goal._id}">Save</button>
-                </td>
-            </tr>
-        `).join('');
+        if (goals.length === 0) {
+            goalsTableBody.innerHTML = '';
+            noGoalsMessage.style.display = 'block';
+            goalsTableContainer.style.display = 'none';
+        } else {
+            noGoalsMessage.style.display = 'none';
+            goalsTableContainer.style.display = 'block';
+            goalsTableBody.innerHTML = goals.map(goal => `
+                <tr>
+                    <td>${goal.description}</td>
+                    <td>${goal.weightage}</td>
+                    <td>${goal.employee_comments}</td>
+                    <td>
+                        <input type="number" 
+                               min="0" 
+                               max="10" 
+                               value="${goal.manager_rating || ''}" 
+                               class="rating-input" 
+                               data-goal-id="${goal._id}">
+                    </td>
+                    <td>
+                        <textarea class="comments-input" 
+                                  data-goal-id="${goal._id}">${goal.manager_comments || ''}</textarea>
+                    </td>
+                    <td>
+                        <button class="btn-primary save-rating" 
+                                data-goal-id="${goal._id}">Save</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
         // Add event listeners for save buttons
         document.querySelectorAll('.save-rating').forEach(button => {
