@@ -1582,4 +1582,51 @@ input:checked + .slider:before {
     padding-bottom: 0.5rem;
 }
 
-/* ...existing code... */
+/* Export Controls */
+.export-controls {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    justify-content: flex-end;
+    padding-right: 20px;
+}
+
+.export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    width: auto;
+}
+
+.export-btn i {
+    font-size: 1rem;
+}
+
+.export-btn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.export-btn[style*="display: none"] {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+}
+
+.export-btn:not([style*="display: none"]) {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
