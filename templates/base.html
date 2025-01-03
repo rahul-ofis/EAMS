@@ -46,6 +46,12 @@
             </svg>
             My Critical Incidents
         </a>
+        <a href="/goals" class="sidebar-link">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 6L9 17l-5-5"></path>
+            </svg>
+            {% if session.get('role') == 'manager' %}Team Goals{% else %}My Goals{% endif %}
+        </a>
         {% endif %}
         {% if session.get('role') != 'hr' and session.get('role') != 'admin' %}
         <a href="/forms" class="sidebar-link">
