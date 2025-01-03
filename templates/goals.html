@@ -18,7 +18,16 @@
         </label>
         <span id="viewLabel">Card View</span>
     </div>
-    
+    {% if session.get('role') == 'manager' %}
+    <div class="export-controls">
+        <button id="exportWord" class="export-btn" style="display: none;">
+            <i class="fas fa-file-word"></i> Export to Word
+        </button>
+        <button id="exportExcel" class="export-btn" style="display: none;">
+            <i class="fas fa-file-excel"></i> Export to Excel
+        </button>
+    </div>
+    {% endif %}
 </div>
 {% if session.get('role') == 'manager' %}
 <select id="employeeSelect" class="member-select" style="max-width: 150px;">
@@ -438,6 +447,33 @@ document.addEventListener('DOMContentLoaded', function() {
     if (goalsLength === 0) {
         noSubmissions.style.display = 'block';
     }
+
+    
+    // Add export functionality
+    const exportWord = document.getElementById('exportWord');
+    const exportExcel = document.getElementById('exportExcel');
+
+    // Show/hide appropriate export button based on view
+    function updateExportButtons() {
+        if (viewToggle.checked) { // Table view
+            exportWord.style.display = 'none';
+            exportExcel.style.display = 'inline-block';
+        } else { // Card view
+            exportWord.style.display = 'inline-block';
+            exportExcel.style.display = 'none';
+        }
+    }
+
+    viewToggle.addEventListener('change', updateExportButtons);
+    updateExportButtons(); // Initial state
+
+    exportWord.addEventListener('click', function() {
+        window.location.href = '/export/goals/word';
+    });
+
+    exportExcel.addEventListener('click', function() {
+        window.location.href = '/export/goals/excel';
+    });
 });
 </script>
 {% endblock %}

@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session, jsonify, send_file
 from pymongo import MongoClient
 from functools import wraps
 import os
 from datetime import datetime
 from bson import ObjectId
+from export_utils import create_word_document, create_excel_sheet
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -789,6 +790,66 @@ def add_goal_feedback(goal_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/export/goals/word')
+@login_required
+def export_goals_word():
+    if session.get('role') != 'manager':
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    team = db.teams.find_one({'manager_id': session['employee_id']})
+    if not team:
+        return jsonify({'error': 'No team found'}), 404
+    
+    # Get all goals for team members
+    goals_data = {}
+    employee_names = {}
+    
+    for member_id in team['member_ids']:
+        employee = db.employees.find_one({'_id': ObjectId(member_id)})
+        if employee:
+            employee_names[member_id] = employee['name']
+            goals = list(db.goals.find({'employee_id': member_id}))
+            goals_data[member_id] = goals
+    
+    doc_buffer = create_word_document(goals_data, employee_names)
+    
+    return send_file(
+        doc_buffer,
+        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        as_attachment=True,
+        download_name=f'team_goals_{datetime.now().strftime("%Y%m%d")}.docx'
+    )
+
+@app.route('/export/goals/excel')
+@login_required
+def export_goals_excel():
+    if session.get('role') != 'manager':
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    team = db.teams.find_one({'manager_id': session['employee_id']})
+    if not team:
+        return jsonify({'error': 'No team found'}), 404
+    
+    # Get all goals for team members
+    goals_data = {}
+    employee_names = {}
+    
+    for member_id in team['member_ids']:
+        employee = db.employees.find_one({'_id': ObjectId(member_id)})
+        if employee:
+            employee_names[member_id] = employee['name']
+            goals = list(db.goals.find({'employee_id': member_id}))
+            goals_data[member_id] = goals
+    
+    excel_buffer = create_excel_sheet(goals_data, employee_names)
+    
+    return send_file(
+        excel_buffer,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'team_goals_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
 
 if __name__ == '__main__':
     if not db.form_status.find_one({'id': 1}):
