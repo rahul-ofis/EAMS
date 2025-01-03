@@ -133,6 +133,22 @@ function startDictation(fieldId, micIcon) {
                 }
             }
             field.value = finalTranscript + interimTranscript;
+            
+            // Update the display in both views
+            const goalId = field.dataset.goalId;
+            if (goalId) {
+                // Update card view
+                const cardFeedback = document.querySelector(`.goal-card[data-goal-id="${goalId}"] .manager-feedback`);
+                if (cardFeedback) {
+                    cardFeedback.value = field.value;
+                }
+                
+                // Update table view
+                const tableFeedback = document.querySelector(`tr[data-goal-id="${goalId}"] .manager-feedback`);
+                if (tableFeedback) {
+                    tableFeedback.value = field.value;
+                }
+            }
         };
 
         recognition.onerror = function(e) {

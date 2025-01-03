@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="view-controls">
+    {% if session.get('role') == 'manager' %}
+    <h2 class="page-heading">Team Goals Management</h2>
+    <div class="filter-controls">
+        
+    </div>
+    {% else %}
+    <h2 class="page-heading">My Goals for {{ selected_year }}</h2>
+    
+    {% endif %}
+    <div class="toggle-switch" style="width: 75px;">
+        <label class="switch">
+            <input type="checkbox" id="viewToggle">
+            <span class="slider round"></span>
+        </label>
+        <span id="viewLabel">Card View</span>
+    </div>
+    
+</div>
+{% if session.get('role') == 'manager' %}
+<select id="employeeSelect" class="member-select" style="max-width: 150px;">
+    <option value="all">All Team Members</option>
+    {% for member in team_members %}
+    <option value="{{ member._id }}">{{ member.name }}</option>
+    {% endfor %}
+</select>
+{% endif %}
+<select id="yearSelect" class="year-select">
+    {% for year in years %}
+    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+    {% endfor %}
+</select>
+<div class="forms-container">
+
+    {% if session.get('role') != 'manager' and selected_year == current_year %}
+    <!-- Card View Form -->
+    <div id="cardViewForm" class="form" style="display: block;">
+        <form id="goalForm" class="form">
+            <div class="form-group">
+                <label>Goal Description</label>
+                <div class="input-container">
+                    <textarea id="goalDescription" required></textarea>
+                    <button type="button" class="mic-icon" data-target="goalDescription"></button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Goal KPIs</label>
+                <div class="input-container">
+                    <textarea id="goalKpis" required></textarea>
+                    <button type="button" class="mic-icon" data-target="goalKpis"></button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Goal Weightage (%)</label>
+                <div class="input-container">
+                    <input type="number" id="goalWeightage" min="0" max="100" required>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Add Goal</button>
+        </form>
+    </div>
+
+    <!-- Table View Form -->
+    <div id="tableViewForm" class="submissions-table-container" style="display: none;">
+        <table class="submissions-table">
+            <thead>
+                <tr>
+                    <th>Goal Description</th>
+                    <th>Goal KPIs</th>
+                    <th>Goal Weightage</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="input-container">
+                            <textarea id="tableGoalDescription" required></textarea>
+                            <button type="button" class="mic-icon" data-target="tableGoalDescription"></button>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="input-container">
+                            <textarea id="tableGoalKpis" required></textarea>
+                            <button type="button" class="mic-icon" data-target="tableGoalKpis"></button>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="input-container">
+                            <input type="number" id="tableGoalWeightage" min="0" max="100" required>
+                        </div>
+                    </td>
+                    <td>
+                        <button type="button" id="tableSubmitBtn" class="submit-btn">Add Goal</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% elif session.get('role') != 'manager' and selected_year < current_year %}
+    <div class="past-year-message">
+        <p>Goals for {{ selected_year }} are read-only. You can only add goals for the current year.</p>
+    </div>
+    {% endif %}
+
+    <!-- Table View -->
+    {% if goals %}
+    {% if session.get('role') == 'manager' %}
+    <h3 class="section-heading">
+        {% if request.args.get('employee') == 'all' %}
+            All Team Goals
+        {% else %}
+            {% for goal in goals %}
+                {% if loop.first %}
+                    {{ goal.employee_name }}'s Goals
+                {% endif %}
+            {% else %}
+                Team Goals
+            {% endfor %}
+        {% endif %}
+    </h3>
+    {% endif %}
+    {% endif %}
+    <div id="tableView" class="submissions-table-container" style="display: none;">
+        {% if goals %}
+        <table class="submissions-table">
+            <thead>
+                <tr>
+                    {% if session.get('role') == 'manager' %}
+                    <th>Employee</th>
+                    {% endif %}
+                    <th>Year</th>
+                    <th>Goal Description</th>
+                    <th>Goal KPIs</th>
+                    <th>Goal Weightage</th>
+                    <th>Manager Rating</th>
+                    <th>Manager Feedback</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for goal in goals %}
+                <tr data-employee-id="{{ goal.employee_id }}">
+                    {% if session.get('role') == 'manager' %}
+                    <td>{{ goal.employee_name }}</td>
+                    {% endif %}
+                    <td>{{ goal.year }}</td>
+                    <td>{{ goal.description }}</td>
+                    <td>{{ goal.kpis }}</td>
+                    <td>{{ goal.weightage }}%</td>
+                    <td>
+                        {% if session.get('role') == 'manager' %}
+                        <input type="number" class="manager-rating" value="{{ goal.manager_rating }}" min="1" max="5" data-goal-id="{{ goal._id }}">
+                        {% else %}
+                        {{ goal.manager_rating if goal.manager_rating else 'Pending' }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if session.get('role') == 'manager' %}
+                        <div class="input-container">
+                            <textarea class="manager-feedback" data-goal-id="{{ goal._id }}" id="feedback-{{ goal._id }}">{{ goal.manager_feedback }}</textarea>
+                            <button type="button" class="mic-icon" data-target="feedback-{{ goal._id }}"></button>
+                        </div>
+                        <button class="save-feedback-btn" data-goal-id="{{ goal._id }}">Save Feedback</button>
+                        {% else %}
+                        {{ goal.manager_feedback if goal.manager_feedback else 'Pending' }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    <!-- Card View -->
+    <div id="cardView" class="goals-list">
+        {% if goals %}
+        {% for goal in goals %}
+        <div class="goal-card" data-employee-id="{{ goal.employee_id }}" data-goal-id="{{ goal._id }}">
+            {% if session.get('role') == 'manager' %}
+            <div class="employee-name">{{ goal.employee_name }}</div>
+            {% endif %}
+            <div class="goal-year">Year: {{ goal.year }}</div>
+            <div class="goal-details">
+                <div class="form-group">
+                    <label>Goal Description</label>
+                    <div class="input-container">
+                        <div class="goal-text">{{ goal.description }}</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Goal KPIs</label>
+                    <div class="input-container">
+                        <div class="goal-text">{{ goal.kpis }}</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Goal Weightage (%)</label>
+                    <div class="goal-text">{{ goal.weightage }}%</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Manager Rating</label>
+                    {% if session.get('role') == 'manager' %}
+                    <input type="number" class="manager-rating" value="{{ goal.manager_rating }}" min="1" max="5" data-goal-id="{{ goal._id }}">
+                    {% else %}
+                    <div class="goal-text">{{ goal.manager_rating if goal.manager_rating else 'Pending' }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label>Manager Feedback</label>
+                    <div class="input-container">
+                        {% if session.get('role') == 'manager' %}
+                        <textarea class="manager-feedback" data-goal-id="{{ goal._id }}" id="feedback-{{ goal._id }}">{{ goal.manager_feedback }}</textarea>
+                        <button type="button" class="mic-icon" data-target="feedback-{{ goal._id }}"></button>
+                        {% else %}
+                        <div class="goal-text">{{ goal.manager_feedback if goal.manager_feedback else 'Pending' }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% if session.get('role') == 'manager' %}
+            <button class="save-feedback-btn" data-goal-id="{{ goal._id }}">Save Feedback</button>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Single No Submissions Div -->
+    <div id="noSubmissions" class="no-submissions" style="display: none;">
+        {% if session.get('role') == 'manager' %}
+            {% if request.args.get('employee') == 'all' %}
+                No goals have been set by any team members yet.
+            {% else %}
+                No goals have been set by this employee yet.
+            {% endif %}
+        {% else %}
+            No goals have been set yet. Use the form above to add your goals.
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // View toggle functionality
+    const viewToggle = document.getElementById('viewToggle');
+    const tableView = document.getElementById('tableView');
+    const cardView = document.getElementById('cardView');
+    const viewLabel = document.getElementById('viewLabel');
+    const formsContainer = document.querySelector('.forms-container');
+    const noSubmissions = document.getElementById('noSubmissions');
+
+    // Initialize view state
+    const savedView = localStorage.getItem('goalsViewPreference');
+    if (savedView === 'table') {
+        viewToggle.checked = true;
+        tableView.style.display = 'block';
+        cardView.style.display = 'none';
+        viewLabel.textContent = 'Table View';
+        formsContainer.classList.add('table-view-active');
+    }
+
+    viewToggle.addEventListener('change', function() {
+        if (this.checked) {
+            tableView.style.display = 'block';
+            cardView.style.display = 'none';
+            if (document.getElementById('cardViewForm')) {
+                document.getElementById('cardViewForm').style.display = 'none';
+                document.getElementById('tableViewForm').style.display = 'block';
+            }
+            viewLabel.textContent = 'Table View';
+            formsContainer.classList.add('table-view-active');
+            localStorage.setItem('goalsViewPreference', 'table');
+        } else {
+            tableView.style.display = 'none';
+            cardView.style.display = 'block';
+            if (document.getElementById('cardViewForm')) {
+                document.getElementById('cardViewForm').style.display = 'block';
+                document.getElementById('tableViewForm').style.display = 'none';
+            }
+            viewLabel.textContent = 'Card View';
+            formsContainer.classList.remove('table-view-active');
+            localStorage.setItem('goalsViewPreference', 'card');
+        }
+    });
+
+    // Initialize table view if that's the saved preference
+    if (savedView === 'table') {
+        if (document.getElementById('cardViewForm')) {
+            document.getElementById('cardViewForm').style.display = 'none';
+            document.getElementById('tableViewForm').style.display = 'block';
+        }
+    }
+
+    // Goal form submission
+    const goalForm = document.getElementById('goalForm');
+
+    if (goalForm) {
+        goalForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                description: document.getElementById('goalDescription').value,
+                kpis: document.getElementById('goalKpis').value,
+                weightage: document.getElementById('goalWeightage').value,
+                year: parseInt(yearSelect.value)
+            };
+
+            try {
+                const response = await fetch('/api/goals', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add goal');
+                }
+
+                alert('Goal added successfully');
+                window.location.reload();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    }
+
+    // Table view form submission
+    const tableSubmitBtn = document.getElementById('tableSubmitBtn');
+    if (tableSubmitBtn) {
+        tableSubmitBtn.addEventListener('click', async function() {
+            const formData = {
+                description: document.getElementById('tableGoalDescription').value,
+                kpis: document.getElementById('tableGoalKpis').value,
+                weightage: document.getElementById('tableGoalWeightage').value,
+                year: parseInt(yearSelect.value)
+            };
+
+            try {
+                const response = await fetch('/api/goals', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add goal');
+                }
+
+                alert('Goal added successfully');
+                window.location.reload();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    }
+
+    // Updated Save feedback functionality
+    document.querySelectorAll('.save-feedback-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const goalId = this.dataset.goalId;
+            const container = this.closest('.goal-card, tr'); // Look for either card or table row
+            const rating = container.querySelector('.manager-rating').value;
+            const feedback = container.querySelector('.manager-feedback').value;
+
+            try {
+                const response = await fetch(`/api/goals/${goalId}/feedback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ rating, feedback })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save feedback');
+                }
+
+                alert('Feedback saved successfully');
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    });
+
+    // Employee and Year selection functionality
+    const employeeSelect = document.getElementById('employeeSelect');
+    const yearSelect = document.getElementById('yearSelect');
+
+    if (employeeSelect) {
+        employeeSelect.addEventListener('change', function() {
+            const selectedId = this.value;
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('employee', selectedId);
+            currentUrl.searchParams.set('year', yearSelect.value);
+            window.location.href = currentUrl.toString();
+        });
+    }
+
+    if (yearSelect) {
+        yearSelect.addEventListener('change', function() {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('year', this.value);
+            if (employeeSelect) {
+                currentUrl.searchParams.set('employee', employeeSelect.value);
+            }
+            window.location.href = currentUrl.toString();
+        });
+    }
+
+    // Set initial selected employee from URL parameter
+    if (employeeSelect) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const employeeParam = urlParams.get('employee');
+        if (employeeParam) {
+            employeeSelect.value = employeeParam;
+        }
+    }
+
+    // Show no-submissions div if there are no goals
+    const goalsLength = "{{ goals|length }}" * 1;
+    if (goalsLength === 0) {
+        noSubmissions.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}
